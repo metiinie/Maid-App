@@ -87,7 +87,7 @@ async function createVacancy(req, res) {
     const client = await db.pool.connect();
     try {
         const agencyId = req.agencyId;
-        const adminUserId = req.adminUser.id;
+        const adminUserId = req.admin.id;
         const {
             category_id,
             title,
@@ -360,7 +360,7 @@ async function getVacancyApplications(req, res) {
 async function updateApplicationStatus(req, res) {
     try {
         const agencyId = req.agencyId;
-        const adminUserId = req.adminUser.id;
+        const adminUserId = req.admin.id;
         const { id } = req.params;
         const { status, rejection_reason, reviewer_notes } = req.body;
 

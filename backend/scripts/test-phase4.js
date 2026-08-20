@@ -26,10 +26,11 @@ async function runTests() {
 
         // Ensure test admin exists
         const adminPasswordHash = await bcrypt.hash('Admin@123456', 10);
-        await db.query(
+        const adminRes = await db.query(
             `INSERT INTO admin_users (id, agency_id, first_name, last_name, email, password_hash, role, is_active)
        VALUES ('88888888-8888-4888-8888-888888888888', $1, 'Super', 'Admin', 'p4admin@testagency.com', $2, 'super_admin', true)
-       ON CONFLICT (id) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
+       ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, agency_id = EXCLUDED.agency_id
+       RETURNING id`,
             [agencyId, adminPasswordHash]
         );
 
@@ -42,7 +43,6 @@ async function runTests() {
        RETURNING id`,
             [userPhone, userPassHash]
         );
-        const userId = userRes.rows[0].id;
 
         // 2. Start HTTP server
         server = app.listen(PORT);
@@ -65,12 +65,14 @@ async function runTests() {
             method: 'POST',
             body: JSON.stringify({ email: 'p4admin@testagency.com', password: 'Admin@123456' })
         });
+        if (adminLogin.status !== 200 || !adminLogin.data.data?.token) throw new Error(`Admin login failed: ${JSON.stringify(adminLogin.data)}`);
         const adminToken = adminLogin.data.data.token;
 
         const userLogin = await apiRequest('/auth/login', {
             method: 'POST',
             body: JSON.stringify({ phone: userPhone, password: 'User@123456' })
         });
+        if (userLogin.status !== 200 || !userLogin.data.data?.token) throw new Error(`User login failed: ${JSON.stringify(userLogin.data)}`);
         const userToken = userLogin.data.data.token;
         console.log('   ✓ Admin & User JWT tokens obtained.');
 
@@ -105,7 +107,7 @@ async function runTests() {
                 languages_required: [{ language: 'Arabic', proficiency_required: 'conversational', is_required: true }]
             })
         });
-        console.log('   Status:', createVac.status, '| Response Data:', JSON.stringify(createVac.data));
+        console.log('   Status:', createVac.status, '| Vacancy ID:', createVac.data.data?.id);
         if (createVac.status !== 201 || !createVac.data.data?.id) throw new Error(`Create vacancy failed: ${JSON.stringify(createVac.data)}`);
         const vacancyId = createVac.data.data.id;
 
