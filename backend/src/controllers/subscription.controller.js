@@ -28,7 +28,7 @@ async function getAgencySubscription(req, res) {
               p.max_candidates, p.max_job_postings, p.max_admin_users, p.features
        FROM agency_subscriptions s
        JOIN subscription_plans p ON p.id = s.plan_id
-       WHERE s.agency_id = $1 AND s.status IN ('active', 'trialing')
+       WHERE s.agency_id = $1 AND s.status IN ('active', 'paused')
        ORDER BY s.created_at DESC
        LIMIT 1`,
             [agencyId]
@@ -88,10 +88,10 @@ async function initializeCheckout(req, res) {
 
         // Create draft invoice
         const { rows: invoiceRows } = await client.query(
-            `INSERT INTO invoices (agency_id, invoice_number, amount, total_amount, currency, status, due_date, payment_method)
-       VALUES ($1, $2, $3, $3, $4, 'draft', NOW() + INTERVAL '7 days', $5)
+            `INSERT INTO invoices (agency_id, invoice_number, amount, total_amount, currency, status, due_date)
+       VALUES ($1, $2, $3, $3, $4, 'draft', NOW() + INTERVAL '7 days')
        RETURNING *`,
-            [agencyId, invoiceNumber, amount, currency, payment_provider]
+            [agencyId, invoiceNumber, amount, currency]
         );
         const invoice = invoiceRows[0];
 
@@ -187,9 +187,9 @@ async function verifyCheckoutPayment(req, res) {
         if (invoiceId) {
             await client.query(
                 `UPDATE invoices
-         SET status = 'paid', paid_at = NOW(), payment_method = $1
-         WHERE id = $2`,
-                [tx.provider, invoiceId]
+         SET status = 'paid', paid_at = NOW()
+         WHERE id = $1`,
+                [invoiceId]
             );
         }
 

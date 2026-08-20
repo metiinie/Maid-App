@@ -34,7 +34,7 @@ async function runTests() {
         );
 
         // Get a plan ID from subscription_plans seed
-        const planRes = await db.query("SELECT id, name FROM subscription_plans WHERE slug = 'agency_pro' OR is_active = true LIMIT 1");
+        const planRes = await db.query('SELECT id, name FROM subscription_plans WHERE is_active = true LIMIT 1');
         if (planRes.rows.length === 0) throw new Error('No subscription plans found in database seed');
         const planId = planRes.rows[0].id;
 
@@ -84,7 +84,6 @@ async function runTests() {
             headers: { Authorization: `Bearer ${adminToken}` },
             body: JSON.stringify({
                 plan_id: planId,
-                billing_cycle: 'monthly',
                 payment_provider: 'chapa'
             })
         });
