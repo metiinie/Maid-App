@@ -37,11 +37,12 @@ async function runTests() {
         server = app.listen(PORT);
         console.log(`✓ Test HTTP server listening on port ${PORT}\n`);
 
-        // Helper fetch wrapper
+        // Helper fetch wrapper with correct header merging
         async function apiRequest(endpoint, options = {}) {
+            const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
             const res = await fetch(`${BASE_URL}${endpoint}`, {
-                headers: { 'Content-Type': 'application/json', ...options.headers },
-                ...options
+                ...options,
+                headers
             });
             const data = await res.json();
             return { status: res.status, data };

@@ -9,7 +9,6 @@ async function register(req, res) {
     try {
         const { first_name, last_name, phone, password, preferred_mode = 'job_seeker' } = req.body;
 
-        // Check if phone already registered
         const existing = await db.query('SELECT id FROM users WHERE phone = $1', [phone]);
         if (existing.rows.length > 0) {
             return errorResponse(res, { statusCode: 400, message: 'Phone number is already registered' });
@@ -26,8 +25,6 @@ async function register(req, res) {
         );
 
         const user = rows[0];
-
-        // Trigger OTP sending
         await createAndSendOTP({ phone, purpose: 'registration', userId: user.id });
 
         return successResponse(res, {
@@ -63,7 +60,6 @@ async function verifyOTPCode(req, res) {
             return errorResponse(res, { statusCode: 400, message: result.message });
         }
 
-        // Mark phone as verified if purpose is registration
         if (purpose === 'registration') {
             await db.query('UPDATE users SET phone_verified = true WHERE phone = $1', [phone]);
         }
@@ -100,7 +96,6 @@ async function login(req, res) {
             return errorResponse(res, { statusCode: 401, message: 'Invalid phone number or password' });
         }
 
-        // Update last login
         await db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
 
         const token = generateUserToken(user);
@@ -158,19 +153,19 @@ async function resetPassword(req, res) {
 // PUT /api/auth/mode
 async function switchMode(req, res) {
     try {
-        const { mode } = req.body;
-        if (!['job_seeker', 'employer'].includes(mode)) {
+        const targetMode = req.body && req.body.mode;
+        if (!targetMode || !['job_seeker', 'employer'].includes(targetMode)) {
             return errorResponse(res, { statusCode: 400, message: 'Invalid mode. Must be job_seeker or employer' });
         }
 
-        await db.query('UPDATE users SET preferred_mode = $1 WHERE id = $2', [mode, req.user.id]);
-        req.user.preferred_mode = mode;
+        await db.query('UPDATE users SET preferred_mode = $1 WHERE id = $2', [targetMode, req.user.id]);
+        req.user.preferred_mode = targetMode;
 
         const newToken = generateUserToken(req.user);
 
         return successResponse(res, {
-            message: `Switched to ${mode} mode`,
-            data: { token: newToken, mode }
+            message: `Switched to ${targetMode} mode`,
+            data: { token: newToken, mode: targetMode }
         });
     } catch (err) {
         console.error('Switch mode error:', err);
