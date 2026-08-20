@@ -10,6 +10,7 @@ const categoryRoutes = require('./category.routes');
 const agencyRoutes = require('./agency.routes');
 const adminVacancyRoutes = require('./adminVacancy.routes');
 const publicVacancyRoutes = require('./publicVacancy.routes');
+const adminPipelineRoutes = require('./adminPipeline.routes');
 
 // Health Check
 router.get('/health', (req, res) => {
@@ -30,5 +31,6 @@ router.use('/categories', categoryRoutes);
 router.use('/agencies', agencyRoutes);
 router.use('/admin/vacancies', adminVacancyRoutes);
 router.use('/vacancies', publicVacancyRoutes);
+router.use('/admin/pipelines', adminPipelineRoutes);
 
 module.exports = router;
