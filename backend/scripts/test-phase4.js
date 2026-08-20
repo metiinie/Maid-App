@@ -105,7 +105,7 @@ async function runTests() {
                 languages_required: [{ language: 'Arabic', proficiency_required: 'conversational', is_required: true }]
             })
         });
-        console.log('   Status:', createVac.status, '| Vacancy ID:', createVac.data.data?.id);
+        console.log('   Status:', createVac.status, '| Response Data:', JSON.stringify(createVac.data));
         if (createVac.status !== 201 || !createVac.data.data?.id) throw new Error(`Create vacancy failed: ${JSON.stringify(createVac.data)}`);
         const vacancyId = createVac.data.data.id;
 
