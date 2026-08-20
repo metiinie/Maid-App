@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
+const publicCandidateController = require('../controllers/publicCandidate.controller');
 const userAuth = require('../middleware/userAuth');
 const validate = require('../middleware/validator');
 
@@ -36,5 +37,8 @@ router.post(
     ],
     userController.registerDeviceToken
 );
+
+// GET /api/users/me/inquiries — User candidate inquiries
+router.get('/me/inquiries', publicCandidateController.getUserInquiries);
 
 module.exports = router;

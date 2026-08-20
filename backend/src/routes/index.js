@@ -5,6 +5,9 @@ const authRoutes = require('./auth.routes');
 const adminAuthRoutes = require('./adminAuth.routes');
 const userRoutes = require('./user.routes');
 const adminCandidateRoutes = require('./adminCandidate.routes');
+const publicCandidateRoutes = require('./publicCandidate.routes');
+const categoryRoutes = require('./category.routes');
+const agencyRoutes = require('./agency.routes');
 
 // Health Check
 router.get('/health', (req, res) => {
@@ -20,5 +23,8 @@ router.use('/auth', authRoutes);
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/users', userRoutes);
 router.use('/admin/candidates', adminCandidateRoutes);
+router.use('/candidates', publicCandidateRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/agencies', agencyRoutes);
 
 module.exports = router;
