@@ -179,7 +179,7 @@ async function getPipelineById(req, res) {
 
         const { rows } = await db.query(
             `SELECT p.*,
-              c.first_name as candidate_first_name, c.last_name as candidate_last_name, c.profile_photo_url as candidate_photo, c.phone as candidate_phone,
+              c.first_name as candidate_first_name, c.last_name as candidate_last_name, c.profile_photo_url as candidate_photo,
               v.title as vacancy_title, v.destination_country as vacancy_country,
               u.first_name as employer_user_first_name, u.last_name as employer_user_last_name, u.phone as employer_user_phone, u.email as employer_user_email
        FROM hiring_pipelines p
