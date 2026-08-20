@@ -11,6 +11,9 @@ const agencyRoutes = require('./agency.routes');
 const adminVacancyRoutes = require('./adminVacancy.routes');
 const publicVacancyRoutes = require('./publicVacancy.routes');
 const adminPipelineRoutes = require('./adminPipeline.routes');
+const chatRoutes = require('./chat.routes');
+const adminChatRoutes = require('./adminChat.routes');
+const notificationRoutes = require('./notification.routes');
 
 // Health Check
 router.get('/health', (req, res) => {
@@ -32,5 +35,8 @@ router.use('/agencies', agencyRoutes);
 router.use('/admin/vacancies', adminVacancyRoutes);
 router.use('/vacancies', publicVacancyRoutes);
 router.use('/admin/pipelines', adminPipelineRoutes);
+router.use('/conversations', chatRoutes);
+router.use('/admin/conversations', adminChatRoutes);
+router.use('/notifications', notificationRoutes);
 
 module.exports = router;
