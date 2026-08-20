@@ -26,12 +26,14 @@ async function runTests() {
 
         // Ensure test admin exists
         const adminPasswordHash = await bcrypt.hash('Admin@123456', 10);
-        await db.query(
+        const adminRes = await db.query(
             `INSERT INTO admin_users (id, agency_id, first_name, last_name, email, password_hash, role, is_active)
        VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', $1, 'Super', 'Admin', 'p5admin@testagency.com', $2, 'super_admin', true)
-       ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, agency_id = EXCLUDED.agency_id`,
+       ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, agency_id = EXCLUDED.agency_id
+       RETURNING id`,
             [agencyId, adminPasswordHash]
         );
+        const adminId = adminRes.rows[0].id;
 
         // Ensure test user exists
         const userPhone = `+2519${Math.floor(10000000 + Math.random() * 90000000)}`;
@@ -46,10 +48,10 @@ async function runTests() {
 
         // Ensure test candidate exists
         const candRes = await db.query(
-            `INSERT INTO candidates (agency_id, first_name, last_name, date_of_birth, gender, nationality, religion, current_country, city, summary, is_active)
-       VALUES ($1, 'Aster', 'Aweke', '1998-05-15', 'female', 'Ethiopian', 'Christian', 'Ethiopia', 'Addis Ababa', 'Experienced caregiver', true)
+            `INSERT INTO candidates (agency_id, uploaded_by, first_name, last_name, date_of_birth, gender, nationality, religion, current_country, city, summary, is_active)
+       VALUES ($1, $2, 'Aster', 'Aweke', '1998-05-15', 'female', 'Ethiopian', 'Christian', 'Ethiopia', 'Addis Ababa', 'Experienced caregiver', true)
        RETURNING id`,
-            [agencyId]
+            [agencyId, adminId]
         );
         const candidateId = candRes.rows[0].id;
 
