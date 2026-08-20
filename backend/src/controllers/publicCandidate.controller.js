@@ -73,14 +73,12 @@ async function getPublicCandidates(req, res) {
             }
         }
 
-        // Count query
         const countRes = await db.query(
             `SELECT COUNT(*) FROM candidates c ${queryWhere}`,
             params
         );
         const totalItems = parseInt(countRes.rows[0].count, 10);
 
-        // Items query with agency name
         const validSortFields = ['created_at', 'view_count', 'inquiry_count', 'years_of_experience'];
         const orderField = validSortFields.includes(sort_by) ? sort_by : 'created_at';
         const orderDirection = sort_order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
@@ -168,9 +166,8 @@ async function getPublicCandidateById(req, res) {
             return errorResponse(res, { statusCode: 404, message: 'Candidate not found or inactive' });
         }
 
-        // Fetch public related sub-items
         const [categories, skills, languages, experience, education] = await Promise.all([
-            db.query('SELECT cat.id, cat.name_en, cat.name_ar, cat.name_am, cc.is_primary FROM candidate_categories cc JOIN categories cat ON cat.id = cc.category_id WHERE cc.candidate_id = $1', [id]),
+            db.query('SELECT cat.id, cat.name, cat.name_ar, cat.name_am, cc.is_primary FROM candidate_categories cc JOIN categories cat ON cat.id = cc.category_id WHERE cc.candidate_id = $1', [id]),
             db.query('SELECT skill_name, proficiency_level, years_experience FROM candidate_skills WHERE candidate_id = $1', [id]),
             db.query('SELECT language, proficiency FROM candidate_languages WHERE candidate_id = $1', [id]),
             db.query('SELECT job_title, employer_name, country, start_date, end_date, description FROM candidate_experience WHERE candidate_id = $1 ORDER BY start_date DESC', [id]),
@@ -197,7 +194,6 @@ async function createInquiry(req, res) {
         const userId = req.user ? req.user.id : null;
         const { employer_name, employer_phone, employer_email, message, preferred_contact_method = 'phone' } = req.body;
 
-        // Get candidate & agency details
         const { rows } = await db.query(
             'SELECT id, agency_id, first_name, last_name FROM candidates WHERE id = $1 AND is_active = true',
             [candidateId]
@@ -216,7 +212,6 @@ async function createInquiry(req, res) {
             [candidateId, candidate.agency_id, userId, employer_name, employer_phone, employer_email, message, preferred_contact_method]
         );
 
-        // Increment inquiry count on candidate
         await db.query('UPDATE candidates SET inquiry_count = inquiry_count + 1 WHERE id = $1', [candidateId]);
 
         return successResponse(res, {
@@ -256,7 +251,7 @@ async function getUserInquiries(req, res) {
 async function getCategories(req, res) {
     try {
         const { rows } = await db.query(
-            'SELECT id, name_en, name_ar, name_am, slug, icon_name, is_active FROM categories WHERE is_active = true ORDER BY display_order ASC, name_en ASC'
+            'SELECT id, name, name_ar, name_am, description, icon_url, is_active FROM categories WHERE is_active = true ORDER BY sort_order ASC, name ASC'
         );
         return successResponse(res, { data: rows });
     } catch (err) {
