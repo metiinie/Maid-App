@@ -146,7 +146,6 @@ async function getPublicCandidateById(req, res) {
     try {
         const { id } = req.params;
 
-        // Increment view count asynchronously
         await db.query('UPDATE candidates SET view_count = view_count + 1 WHERE id = $1', [id]);
 
         const { rows } = await db.query(
@@ -264,10 +263,10 @@ async function getCategories(req, res) {
 async function getAgencies(req, res) {
     try {
         const { rows } = await db.query(
-            `SELECT id, name, slug, logo_url, rating, total_reviews, total_placements, is_verified
+            `SELECT id, name, slug, logo_url, description, phone, email, city, is_verified
        FROM agencies
        WHERE is_active = true
-       ORDER BY rating DESC, name ASC`
+       ORDER BY name ASC`
         );
         return successResponse(res, { data: rows });
     } catch (err) {
