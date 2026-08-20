@@ -1,10 +1,6 @@
-const crypto = require('crypto');
 const db = require('../config/db');
 const { initializePayment, verifyPayment } = require('../services/payment.service');
-const { successResponse, errorResponse } = {
-    successResponse: (res, payload) => res.status(payload.statusCode || 200).json({ success: true, ...payload }),
-    errorResponse: (res, payload) => res.status(payload.statusCode || 400).json({ success: false, error: payload })
-};
+const { successResponse, errorResponse } = require('../utils/response');
 
 // GET /api/subscriptions/plans — Public list available subscription plans
 async function getSubscriptionPlans(req, res) {
@@ -12,7 +8,7 @@ async function getSubscriptionPlans(req, res) {
         const { rows } = await db.query(
             `SELECT * FROM subscription_plans
        WHERE is_active = true
-       ORDER BY price_etb_monthly ASC`
+       ORDER BY price ASC`
         );
         return successResponse(res, { data: rows });
     } catch (err) {
@@ -28,8 +24,8 @@ async function getAgencySubscription(req, res) {
 
         // Get active subscription
         const { rows: subRows } = await db.query(
-            `SELECT s.*, p.name as plan_name, p.slug as plan_slug, p.price_etb_monthly, p.price_etb_yearly,
-              p.max_candidates, p.max_active_vacancies, p.max_featured_candidates, p.features
+            `SELECT s.*, p.name as plan_name, p.price, p.billing_cycle,
+              p.max_candidates, p.max_job_postings, p.max_admin_users, p.features
        FROM agency_subscriptions s
        JOIN subscription_plans p ON p.id = s.plan_id
        WHERE s.agency_id = $1 AND s.status IN ('active', 'trialing')
@@ -70,8 +66,7 @@ async function initializeCheckout(req, res) {
     const client = await db.pool.connect();
     try {
         const agencyId = req.agencyId;
-        const adminUserId = req.admin.id;
-        const { plan_id, billing_cycle = 'monthly', payment_provider = 'chapa' } = req.body;
+        const { plan_id, payment_provider = 'chapa' } = req.body;
 
         // Verify plan
         const { rows: planRows } = await db.query(
@@ -84,7 +79,7 @@ async function initializeCheckout(req, res) {
             return errorResponse(res, { statusCode: 404, message: 'Subscription plan not found' });
         }
 
-        const amount = billing_cycle === 'yearly' ? plan.price_etb_yearly : plan.price_etb_monthly;
+        const amount = plan.price;
         const currency = 'ETB';
         const txRef = `ref-sub-${agencyId.substring(0, 8)}-${Date.now()}`;
         const invoiceNumber = `INV-${Date.now()}`;
@@ -93,8 +88,8 @@ async function initializeCheckout(req, res) {
 
         // Create draft invoice
         const { rows: invoiceRows } = await client.query(
-            `INSERT INTO agency_invoices (agency_id, invoice_number, amount, currency, status, due_date, payment_method)
-       VALUES ($1, $2, $3, $4, 'draft', NOW() + INTERVAL '7 days', $5)
+            `INSERT INTO invoices (agency_id, invoice_number, amount, total_amount, currency, status, due_date, payment_method)
+       VALUES ($1, $2, $3, $3, $4, 'draft', NOW() + INTERVAL '7 days', $5)
        RETURNING *`,
             [agencyId, invoiceNumber, amount, currency, payment_provider]
         );
@@ -102,10 +97,10 @@ async function initializeCheckout(req, res) {
 
         // Create payment transaction
         const { rows: txRows } = await client.query(
-            `INSERT INTO payment_transactions (agency_id, invoice_id, payment_provider, transaction_reference, amount, currency, status, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
+            `INSERT INTO payment_transactions (agency_id, provider, provider_tx_id, amount, currency, status, metadata)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6)
        RETURNING *`,
-            [agencyId, invoice.id, payment_provider, txRef, amount, currency, JSON.stringify({ plan_id, billing_cycle })]
+            [agencyId, payment_provider, txRef, amount, currency, JSON.stringify({ plan_id, invoice_id: invoice.id })]
         );
 
         await client.query('COMMIT');
@@ -159,7 +154,7 @@ async function verifyCheckoutPayment(req, res) {
 
         // Verify transaction record
         const { rows: txRows } = await client.query(
-            'SELECT * FROM payment_transactions WHERE transaction_reference = $1 AND agency_id = $2',
+            'SELECT * FROM payment_transactions WHERE provider_tx_id = $1 AND agency_id = $2',
             [tx_ref, agencyId]
         );
 
@@ -169,7 +164,7 @@ async function verifyCheckoutPayment(req, res) {
             return errorResponse(res, { statusCode: 404, message: 'Payment transaction record not found' });
         }
 
-        const verification = await verifyPayment({ provider: tx.payment_provider || provider, tx_ref });
+        const verification = await verifyPayment({ provider: tx.provider || provider, tx_ref });
 
         if (!verification.success || verification.status !== 'completed') {
             await client.query('ROLLBACK');
@@ -179,40 +174,55 @@ async function verifyCheckoutPayment(req, res) {
         // Update payment transaction
         await client.query(
             `UPDATE payment_transactions
-       SET status = 'completed', external_id = $1, paid_at = NOW()
-       WHERE id = $2`,
-            [verification.external_id || null, tx.id]
+       SET status = 'completed', paid_at = NOW()
+       WHERE id = $1`,
+            [tx.id]
         );
 
+        const metadata = typeof tx.metadata === 'string' ? JSON.parse(tx.metadata) : (tx.metadata || {});
+        const planId = metadata.plan_id;
+        const invoiceId = metadata.invoice_id;
+
         // Update invoice
-        if (tx.invoice_id) {
+        if (invoiceId) {
             await client.query(
-                `UPDATE agency_invoices
+                `UPDATE invoices
          SET status = 'paid', paid_at = NOW(), payment_method = $1
          WHERE id = $2`,
-                [tx.payment_provider, tx.invoice_id]
+                [tx.provider, invoiceId]
             );
         }
 
-        // Activate subscription
-        const metadata = typeof tx.metadata === 'string' ? JSON.parse(tx.metadata) : tx.metadata;
-        const planId = metadata.plan_id;
-        const billingCycle = metadata.billing_cycle || 'monthly';
-        const periodMonths = billingCycle === 'yearly' ? 12 : 1;
-
-        // Deactivate prior subscriptions
+        // Deactivate prior active subscriptions
         await client.query(
             "UPDATE agency_subscriptions SET status = 'expired' WHERE agency_id = $1 AND status = 'active'",
             [agencyId]
         );
 
+        // Create active subscription record
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+
         const { rows: subRows } = await client.query(
             `INSERT INTO agency_subscriptions (
-         agency_id, plan_id, status, billing_cycle, current_period_start, current_period_end
-       ) VALUES ($1, $2, 'active', $3, NOW(), NOW() + INTERVAL '1 month' * $4)
+         agency_id, plan_id, status, start_date, end_date, amount_paid, payment_method, payment_reference
+       ) VALUES ($1, $2, 'active', $3, $4, $5, $6, $7)
        RETURNING *`,
-            [agencyId, planId, billingCycle, periodMonths]
+            [agencyId, planId, startDate, endDate, tx.amount, tx.provider, tx_ref]
         );
+
+        // Also link subscription_id on payment_transactions and invoices
+        await client.query(
+            'UPDATE payment_transactions SET subscription_id = $1 WHERE id = $2',
+            [subRows[0].id, tx.id]
+        );
+        if (invoiceId) {
+            await client.query(
+                'UPDATE invoices SET subscription_id = $1 WHERE id = $2',
+                [subRows[0].id, invoiceId]
+            );
+        }
 
         await client.query('COMMIT');
 
@@ -237,7 +247,7 @@ async function getAgencyInvoices(req, res) {
     try {
         const agencyId = req.agencyId;
         const { rows } = await db.query(
-            'SELECT * FROM agency_invoices WHERE agency_id = $1 ORDER BY created_at DESC',
+            'SELECT * FROM invoices WHERE agency_id = $1 ORDER BY created_at DESC',
             [agencyId]
         );
         return successResponse(res, { data: rows });
