@@ -1,27 +1,26 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
     content: [
-        "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx}",
+        "./app/**/*.{js,jsx,ts,tsx}",
+        "./components/**/*.{js,jsx,ts,tsx}",
+        "./context/**/*.{js,jsx,ts,tsx}",
     ],
+    presets: [require("nativewind/preset")],
     theme: {
         extend: {
             colors: {
-                ethiopia: {
-                    gold: '#D4AF37',
-                    'gold-light': '#E5C158',
-                    'gold-dark': '#B38F24',
-                    navy: '#0A192F',
-                    'navy-light': '#172A45',
-                    'navy-dark': '#060E1A',
-                    emerald: '#10B981',
-                    crimson: '#E63946',
-                }
+                'ethiopia-gold': '#D4AF37',
+                'ethiopia-gold-light': '#E8C84A',
+                'ethiopia-navy': '#0A192F',
+                'ethiopia-navy-light': '#112240',
+                'ethiopia-crimson': '#DC2626',
+                'ethiopia-emerald': '#10B981',
             },
             fontFamily: {
-                sans: ['Inter', 'Noto Sans Ethiopic', 'sans-serif'],
-            }
+                sans: ['Inter'],
+                'ethiopic': ['NotoSansEthiopic'],
+            },
         },
     },
     plugins: [],
-}
+};
