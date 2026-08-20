@@ -10,16 +10,24 @@ Comprehensive multi-tenant SaaS recruitment platform connecting accredited Ethio
 Maid-App/
 ├── backend/            # Express REST API, JWT auth, S3 uploads, Chat, Pipelines & Payments
 │   └── database/       # PostgreSQL migration and seed SQL scripts
-├── frontend/           # React + Vite + Tailwind CSS single page web application
-├── Documentation.md    # Full technical & architectural specification document
-└── README.md           # Quickstart and overview guide
+├── frontend/           # Expo SDK 54 React Native Mobile App
+│   ├── app/            # Expo Router file-based navigation screens
+│   │   ├── (tabs)/     # Bottom tab navigator (Home, Candidates, Jobs, Agencies)
+│   │   ├── (auth)/     # Login & Register screens
+│   │   ├── (user)/     # User/Employer dashboard
+│   │   └── (admin)/    # Agency Admin SaaS dashboard
+│   ├── services/       # Axios API service layer with SecureStore JWT
+│   ├── context/        # AuthContext & ChatContext providers
+│   └── assets/         # App icons and images
+├── Documentation.md    # Full technical & architectural specification
+└── README.md           # Quickstart guide
 ```
 
 ---
 
 ## 🚀 Quickstart Commands (PowerShell)
 
-> **Note for Windows PowerShell**: Use `;` to chain commands (do not use `&&`).
+> **Note for Windows PowerShell**: Use `;` to chain commands (not `&&`).
 
 ### 1. Start Backend API Server
 ```powershell
@@ -27,25 +35,21 @@ cd backend; npm start
 ```
 - Runs Express server at `http://localhost:5000`
 
-### 2. Start Frontend Web Application
+### 2. Start Mobile App (Expo)
 ```powershell
-cd frontend; npm run dev
+cd frontend; npx expo start
 ```
-- Runs Vite dev server at `http://localhost:3000`
+- Scan the QR code with **Expo Go** on your phone
+- Or press `a` for Android emulator / `i` for iOS simulator
 
-### 3. Run Backend Integration Test Suites (Phases 1–7)
-```powershell
-cd backend; node scripts/test-phase1.js
-cd backend; node scripts/test-phase2.js
-cd backend; node scripts/test-phase3.js
-cd backend; node scripts/test-phase4.js
-cd backend; node scripts/test-phase5.js
-cd backend; node scripts/test-phase6.js
-cd backend; node scripts/test-phase7.js
+### 3. Configure API URL
+Edit `frontend/services/api.ts` and set `API_BASE_URL` to your computer's local IP:
+```typescript
+const API_BASE_URL = 'http://YOUR_IP:5000/api';
 ```
 
 ---
 
 ## 🛠️ Stack Overview
-- **Backend**: Node.js, Express, PostgreSQL, JWT, Multer, AWS S3 SDK, Firebase Admin (FCM).
-- **Frontend**: React 18, Vite, Tailwind CSS (Ethiopian Gold `#D4AF37` & Navy `#0A192F`), Lucide Icons, Axios, React Router DOM.
+- **Backend**: Node.js, Express, PostgreSQL, JWT, Multer, AWS S3 SDK, Firebase Admin (FCM)
+- **Mobile App**: Expo SDK 54, React Native, Expo Router, NativeWind (Tailwind CSS), Lucide Icons, Axios, SecureStore

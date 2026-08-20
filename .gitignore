@@ -3,8 +3,20 @@ node_modules/
 backend/node_modules/
 frontend/node_modules/
 
-# Production / Build outputs
+# Expo / React Native
+frontend/.expo/
+frontend/ios/
+frontend/android/
 frontend/dist/
+frontend/web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Production / Build outputs
 dist/
 build/
 
