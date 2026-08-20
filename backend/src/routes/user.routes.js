@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
 const publicCandidateController = require('../controllers/publicCandidate.controller');
+const publicVacancyController = require('../controllers/publicVacancy.controller');
 const userAuth = require('../middleware/userAuth');
 const validate = require('../middleware/validator');
 
@@ -40,5 +41,8 @@ router.post(
 
 // GET /api/users/me/inquiries — User candidate inquiries
 router.get('/me/inquiries', publicCandidateController.getUserInquiries);
+
+// GET /api/users/me/applications — User job applications
+router.get('/me/applications', publicVacancyController.getUserApplications);
 
 module.exports = router;

@@ -191,7 +191,11 @@ async function createInquiry(req, res) {
     try {
         const { id: candidateId } = req.params;
         const userId = req.user ? req.user.id : null;
-        const { employer_name, employer_phone, employer_email, message, preferred_contact_method = 'phone' } = req.body;
+        const { message, preferred_contact_channel = 'phone', purpose, required_start_date } = req.body;
+
+        if (!userId) {
+            return errorResponse(res, { statusCode: 401, message: 'Authentication required to submit inquiry' });
+        }
 
         const { rows } = await db.query(
             'SELECT id, agency_id, first_name, last_name FROM candidates WHERE id = $1 AND is_active = true',
@@ -200,15 +204,15 @@ async function createInquiry(req, res) {
 
         const candidate = rows[0];
         if (!candidate) {
-            return errorResponse(res, { statusCode: 404, message: 'Candidate not found' });
+            return errorResponse(res, { statusCode: 404, message: 'Candidate not found or inactive' });
         }
 
         const { rows: inquiryRows } = await db.query(
             `INSERT INTO candidate_inquiries (
-         candidate_id, agency_id, user_id, employer_name, employer_phone, employer_email, message, preferred_contact_method
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         candidate_id, agency_id, user_id, message, preferred_contact_channel, purpose, required_start_date
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-            [candidateId, candidate.agency_id, userId, employer_name, employer_phone, employer_email, message, preferred_contact_method]
+            [candidateId, candidate.agency_id, userId, message, preferred_contact_channel, purpose || null, required_start_date || null]
         );
 
         await db.query('UPDATE candidates SET inquiry_count = inquiry_count + 1 WHERE id = $1', [candidateId]);

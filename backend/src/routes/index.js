@@ -8,6 +8,8 @@ const adminCandidateRoutes = require('./adminCandidate.routes');
 const publicCandidateRoutes = require('./publicCandidate.routes');
 const categoryRoutes = require('./category.routes');
 const agencyRoutes = require('./agency.routes');
+const adminVacancyRoutes = require('./adminVacancy.routes');
+const publicVacancyRoutes = require('./publicVacancy.routes');
 
 // Health Check
 router.get('/health', (req, res) => {
@@ -26,5 +28,7 @@ router.use('/admin/candidates', adminCandidateRoutes);
 router.use('/candidates', publicCandidateRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/agencies', agencyRoutes);
+router.use('/admin/vacancies', adminVacancyRoutes);
+router.use('/vacancies', publicVacancyRoutes);
 
 module.exports = router;

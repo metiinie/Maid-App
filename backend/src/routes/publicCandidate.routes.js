@@ -5,15 +5,6 @@ const publicCandidateController = require('../controllers/publicCandidate.contro
 const userAuth = require('../middleware/userAuth');
 const validate = require('../middleware/validator');
 
-// Optional auth middleware so logged-in users populate req.user on public endpoints
-function optionalAuth(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        return userAuth(req, res, next);
-    }
-    next();
-}
-
 // GET /api/candidates — Public catalog search
 router.get('/', publicCandidateController.getPublicCandidates);
 
@@ -23,14 +14,16 @@ router.get('/featured', publicCandidateController.getFeaturedCandidates);
 // GET /api/candidates/:id — Public candidate details
 router.get('/:id', publicCandidateController.getPublicCandidateById);
 
-// POST /api/candidates/:id/inquiry — Submit candidate inquiry
+// POST /api/candidates/:id/inquiry — Submit candidate inquiry (Requires User Auth)
 router.post(
     '/:id/inquiry',
-    optionalAuth,
+    userAuth,
     [
-        body('employer_name').trim().notEmpty().withMessage('Employer name is required'),
-        body('employer_phone').trim().notEmpty().withMessage('Employer phone is required'),
-        body('employer_email').optional().isEmail().withMessage('Invalid email address'),
+        body('message').optional().trim(),
+        body('preferred_contact_channel')
+            .optional()
+            .isIn(['phone', 'whatsapp', 'telegram', 'imo', 'email', 'in_app', 'website'])
+            .withMessage('Invalid contact channel'),
         validate
     ],
     publicCandidateController.createInquiry
