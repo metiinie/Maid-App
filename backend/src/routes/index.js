@@ -14,6 +14,8 @@ const adminPipelineRoutes = require('./adminPipeline.routes');
 const chatRoutes = require('./chat.routes');
 const adminChatRoutes = require('./adminChat.routes');
 const notificationRoutes = require('./notification.routes');
+const publicSubscriptionRoutes = require('./publicSubscription.routes');
+const adminSubscriptionRoutes = require('./adminSubscription.routes');
 
 // Health Check
 router.get('/health', (req, res) => {
@@ -38,5 +40,7 @@ router.use('/admin/pipelines', adminPipelineRoutes);
 router.use('/conversations', chatRoutes);
 router.use('/admin/conversations', adminChatRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/subscriptions', publicSubscriptionRoutes);
+router.use('/admin/subscription', adminSubscriptionRoutes);
 
 module.exports = router;
