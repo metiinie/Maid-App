@@ -1,8 +1,11 @@
 # Ethiopian Recruitment Agency App — Full Build Documentation
 
-**Version:** 1.0  
-**Stack:** React Native · Node.js + Express · PostgreSQL · AWS S3 · Firebase · Africa's Talking  
-**Model:** Multi-tenant SaaS — one mobile app, multiple agency workspaces
+**Version:** 2.0  
+**Stack:** React Native + Expo · NestJS + Fastify · Prisma + Neon PostgreSQL · Cloudinary · Redis + BullMQ · Expo Push · SMSEthiopia  
+**Admin:** Next.js + Tailwind + shadcn/ui  
+**Infra:** Docker · Cloudflare · GitHub Actions · Sentry  
+**Brand Colors:** White `#FFFFFF` · Green `#10B981` · Blue `#3B82F6`  
+**Model:** Multi-tenant SaaS — one mobile app, one admin dashboard, multiple agency workspaces
 
 ---
 
@@ -56,339 +59,328 @@ The agency is always the middle point. No direct contact between employers and c
 ## 2. System Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│               React Native Mobile App               │
-│         (iOS + Android — single codebase)           │
-│                                                     │
-│  ┌──────────────┐         ┌─────────────────────┐  │
-│  │  User App    │         │    Admin Panel       │  │
-│  │  (2 modes)   │         │  (Agency Dashboard)  │  │
-│  └──────────────┘         └─────────────────────┘  │
-└──────────────────────┬──────────────────────────────┘
-                       │ HTTPS / JWT
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│              Node.js + Express API Server           │
-│                                                     │
-│  Auth Middleware → Route Handlers → Controllers     │
-│  Multi-tenancy Middleware (agency_id injection)     │
-└──────┬──────────┬──────────┬────────────┬───────────┘
-       │          │          │            │
-       ▼          ▼          ▼            ▼
-┌──────────┐ ┌────────┐ ┌────────┐ ┌──────────┐
-│PostgreSQL│ │AWS S3  │ │Firebase│ │Africa's  │
-│(primary  │ │+Cloud- │ │(Push   │ │Talking   │
-│database) │ │Front   │ │Notifs) │ │(SMS)     │
-└──────────┘ └────────┘ └────────┘ └──────────┘
+┌───────────────────────────┐     ┌────────────────────────────┐
+│   React Native + Expo     │     │   Next.js Admin Dashboard  │
+│   (iOS + Android)         │     │   (Tailwind + shadcn/ui)   │
+│                           │     │                            │
+│  TanStack Query · Zustand │     │  TanStack Query · RHF/Zod  │
+│  Expo Router · RHF/Zod   │     │                            │
+└───────────┬───────────────┘     └──────────┬─────────────────┘
+            │ REST (OpenAPI / Swagger)        │
+            └───────────────┬────────────────┘
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              NestJS + Fastify API Server                    │
+│              TypeScript · Prisma ORM · OpenAPI              │
+│                                                             │
+│  Guards → Pipes → Controllers → Services → Prisma Client   │
+│  Multi-tenancy Guard (agency_id from JWT)                   │
+│  BullMQ Workers (background jobs via Redis)                 │
+└──────┬──────────┬──────────┬────────────┬──────────┬────────┘
+       │          │          │            │          │
+       ▼          ▼          ▼            ▼          ▼
+┌──────────┐ ┌────────┐ ┌──────────┐ ┌────────┐ ┌────────────┐
+│   Neon   │ │ Redis  │ │Cloudinary│ │ Expo   │ │SMSEthiopia │
+│(Managed  │ │(Cache +│ │(Images + │ │ Push   │ │(OTP / SMS) │
+│ Postgres)│ │BullMQ) │ │ Videos)  │ │Notifs  │ │            │
+└──────────┘ └────────┘ └──────────┘ └────────┘ └────────────┘
+```
+
+### Infrastructure Layer
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Docker (containerized backend + admin)                     │
+│  Cloudflare (DNS, CDN, DDoS protection, SSL)                │
+│  GitHub Actions (CI/CD pipelines)                           │
+│  Sentry (error tracking + performance monitoring)           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Request Flow
 
-1. Mobile app sends request with `Authorization: Bearer <JWT>`
-2. Auth middleware verifies token, extracts `userId` or `adminId` + `role`
-3. Multi-tenancy middleware resolves `agency_id` from token or URL context
-4. Controller runs business logic against PostgreSQL
-5. For file uploads: files go to S3 via pre-signed URL; only the URL is stored in the DB
-6. For notifications: notification service calls Firebase (push) and/or Africa's Talking (SMS) after the primary DB write
+1. Mobile app or Admin dashboard sends request with `Authorization: Bearer <JWT>`
+2. NestJS `AuthGuard` verifies token, extracts `userId` or `adminId` + `role`
+3. `AgencyGuard` resolves `agency_id` from the JWT payload
+4. Controller delegates to service layer which uses Prisma Client for database operations
+5. For file uploads: files are uploaded to Cloudinary; the returned URL is stored in the DB
+6. For notifications: notification service calls Expo Push API and/or SMSEthiopia after the primary DB write
+7. Background jobs (email, analytics sync, vacancy expiration) are queued via BullMQ + Redis
 
 ---
 
 ## 3. Tech Stack & Versions
 
-### Mobile (React Native)
+### Mobile (React Native + Expo)
 
 | Package | Version | Purpose |
 |---|---|---|
-| `react-native` | 0.73+ | Core framework |
-| `@react-navigation/native` | 6.x | Navigation |
-| `@react-navigation/stack` | 6.x | Stack navigator |
-| `@react-navigation/bottom-tabs` | 6.x | Tab navigator |
-| `zustand` | 4.x | State management (lightweight, no boilerplate) |
-| `axios` | 1.x | HTTP client |
-| `@react-native-async-storage/async-storage` | 1.x | Token storage |
-| `react-native-video` | 5.x | Candidate intro video playback |
-| `react-native-image-picker` | 7.x | Photo/video upload |
-| `react-native-document-picker` | 9.x | Document upload |
-| `@notifee/react-native` | 7.x | Local notification display |
-| `@react-native-firebase/app` | 18.x | Firebase core |
-| `@react-native-firebase/messaging` | 18.x | FCM push notifications |
-| `react-native-linking` | built-in | WhatsApp/Telegram/IMO deep links |
-| `react-native-flash-message` | 0.x | Toast notifications |
-| `react-native-skeleton-placeholder` | 5.x | Loading skeletons |
-| `@shopify/flash-list` | 1.x | High-performance candidate/vacancy lists |
-| `react-native-fast-image` | 8.x | Cached candidate photo display |
+| `expo` | ~54.x | Managed workflow platform |
+| `react-native` | 0.79.x | Core framework |
+| `expo-router` | ~4.x | File-based routing (replaces React Navigation stacks) |
+| `@react-navigation/bottom-tabs` | 7.x | Tab navigator |
+| `@tanstack/react-query` | 5.x | Server state management (caching, refetching, mutations) |
+| `zustand` | 5.x | Client state management (auth, UI state) |
 | `react-hook-form` | 7.x | Form management |
 | `zod` | 3.x | Schema validation |
+| `@hookform/resolvers` | 3.x | Zod resolver for React Hook Form |
+| `axios` | 1.x | HTTP client (used by TanStack Query) |
+| `expo-secure-store` | ~14.x | Secure token storage |
+| `expo-notifications` | ~0.29.x | Expo Push Notifications |
+| `expo-image-picker` | ~16.x | Photo/video capture and selection |
+| `expo-document-picker` | ~13.x | Document upload |
+| `expo-video` | ~2.x | Candidate intro video playback |
+| `expo-linking` | ~7.x | WhatsApp/Telegram/IMO deep links |
+| `@shopify/flash-list` | 1.x | High-performance candidate/vacancy lists |
+| `expo-image` | ~2.x | Cached image display (replaces FastImage) |
+| `react-native-reanimated` | ~3.x | Animations |
+| `react-native-gesture-handler` | ~2.x | Gesture handling |
+| `lucide-react-native` | 0.x | Icon library |
+| `react-native-svg` | ~15.x | SVG rendering |
 
-### Backend (Node.js)
+### Backend (NestJS + Fastify)
 
 | Package | Version | Purpose |
 |---|---|---|
-| `express` | 4.x | HTTP server framework |
-| `pg` | 8.x | PostgreSQL client |
-| `jsonwebtoken` | 9.x | JWT creation and verification |
+| `@nestjs/core` | 11.x | NestJS framework core |
+| `@nestjs/platform-fastify` | 11.x | Fastify HTTP adapter (replaces Express) |
+| `@nestjs/swagger` | 8.x | OpenAPI / Swagger documentation |
+| `@nestjs/config` | 4.x | Environment configuration |
+| `@nestjs/jwt` | 11.x | JWT creation and verification |
+| `@nestjs/passport` | 11.x | Auth strategy framework |
+| `@nestjs/bullmq` | 11.x | Background job queue |
+| `@nestjs/throttler` | 6.x | Rate limiting |
+| `@prisma/client` | 6.x | Prisma ORM client |
+| `prisma` | 6.x | Prisma CLI (dev dependency) |
+| `cloudinary` | 2.x | Cloudinary SDK for image/video uploads |
+| `expo-server-sdk` | 3.x | Expo Push Notification dispatch |
 | `bcryptjs` | 2.x | Password hashing |
-| `multer` | 1.x | Multipart file handling |
-| `@aws-sdk/client-s3` | 3.x | AWS S3 uploads |
-| `@aws-sdk/s3-request-presigner` | 3.x | Pre-signed URL generation |
-| `firebase-admin` | 12.x | Firebase push notification dispatch |
-| `africastalking` | 0.x | Africa's Talking SMS |
-| `express-rate-limit` | 7.x | Rate limiting |
-| `helmet` | 7.x | HTTP security headers |
-| `cors` | 2.x | CORS headers |
-| `express-validator` | 7.x | Request validation |
-| `dotenv` | 16.x | Environment variable loading |
-| `winston` | 3.x | Logging |
-| `node-cron` | 3.x | Cron jobs (expire vacancies, etc.) |
-| `uuid` | 9.x | UUID generation |
+| `class-validator` | 0.14.x | DTO validation (replaces express-validator) |
+| `class-transformer` | 0.5.x | DTO transformation |
+| `ioredis` | 5.x | Redis client |
+| `bullmq` | 5.x | Job queue (vacancy expiry, OTP cleanup, analytics sync) |
+| `@sentry/nestjs` | 9.x | Error tracking |
+| `helmet` | 8.x | HTTP security headers via Fastify plugin |
+| `zod` | 3.x | Runtime schema validation |
 | `nodemailer` | 6.x | Email sending (optional) |
+
+### Media (Cloudinary)
+
+| Feature | Details |
+|---|---|
+| **Provider** | Cloudinary |
+| **Images** | Candidate photos, agency logos, user profile photos |
+| **Videos** | Candidate introduction videos (with auto-thumbnail) |
+| **Documents** | Passports, medical certs, contracts (PDF) |
+| **Transformations** | Auto-resize, face-crop thumbnails, video transcoding |
+| **CDN** | Built-in Cloudinary CDN (global edge delivery) |
+
+### Admin Dashboard (Next.js)
+
+| Package | Version | Purpose |
+|---|---|---|
+| `next` | 15.x | React meta-framework (SSR + file-based routing) |
+| `react` | 19.x | UI library |
+| `typescript` | 5.x | Type safety |
+| `tailwindcss` | 4.x | Utility-first CSS |
+| `shadcn/ui` | latest | Accessible, composable UI components |
+| `@tanstack/react-query` | 5.x | Server state management |
+| `react-hook-form` | 7.x | Form management |
+| `zod` | 3.x | Schema validation |
+| `@hookform/resolvers` | 3.x | Zod resolver |
+| `axios` | 1.x | HTTP client |
+| `lucide-react` | 0.x | Icon library |
+| `recharts` | 2.x | Dashboard charts and analytics |
+| `@tanstack/react-table` | 8.x | Data tables |
 
 ### Infrastructure
 
 | Service | Purpose |
 |---|---|
-| **PostgreSQL 16** | Primary database |
-| **AWS S3** | Candidate photos, intro videos, documents |
-| **AWS CloudFront** | CDN for fast media delivery |
-| **Firebase Cloud Messaging** | Push notifications to mobile |
-| **Africa's Talking** | SMS for Ethiopian users |
-| **Redis** (optional, recommended) | OTP caching, rate limiting, session store |
+| **Neon** | Managed PostgreSQL (serverless, branching, auto-scaling) |
+| **Redis** | Caching, BullMQ job queue, rate limiting, OTP store |
+| **Cloudinary** | Media storage and CDN (images, videos, documents) |
+| **Expo Push** | Push notifications to mobile (replaces Firebase FCM) |
+| **SMSEthiopia** | SMS for Ethiopian users (OTP, notifications) |
+| **Docker** | Containerized backend + admin deployments |
+| **Cloudflare** | DNS, CDN, DDoS protection, SSL termination |
+| **GitHub Actions** | CI/CD pipelines (lint, test, build, deploy) |
+| **Sentry** | Error tracking + performance monitoring |
 
 ---
 
 ## 4. Folder Structure
 
-### Backend
+### Backend (NestJS + Fastify)
 
 ```
 backend/
 ├── src/
 │   ├── config/
-│   │   ├── db.js                  # PostgreSQL pool setup
-│   │   ├── s3.js                  # AWS S3 client config
-│   │   ├── firebase.js            # Firebase Admin SDK init
-│   │   └── africasTalking.js      # Africa's Talking client init
+│   │   ├── configuration.ts       # Type-safe ConfigModule setup
+│   │   ├── cloudinary.config.ts   # Cloudinary SDK init
+│   │   └── redis.config.ts        # Redis client & BullMQ config
 │   │
-│   ├── middleware/
-│   │   ├── userAuth.js            # Verifies user JWT → req.user
-│   │   ├── adminAuth.js           # Verifies admin JWT → req.admin
-│   │   ├── requireRole.js         # Role-based access (super_admin, admin, staff)
-│   │   ├── agencyContext.js       # Injects agency_id into req.agencyId
-│   │   ├── upload.js              # Multer + S3 upload middleware
-│   │   ├── rateLimiter.js         # Express rate limiter configs
-│   │   ├── validator.js           # express-validator error collector
-│   │   └── errorHandler.js        # Global error handler
+│   ├── common/
+│   │   ├── decorators/            # @CurrentUser(), @CurrentAdmin(), @Roles(), @Public()
+│   │   ├── guards/                # JwtAuthGuard, AdminJwtGuard, RolesGuard, AgencyGuard
+│   │   ├── interceptors/          # TransformInterceptor, LoggingInterceptor
+│   │   ├── filters/               # HttpExceptionFilter, PrismaExceptionFilter
+│   │   └── dto/                   # PaginatedQueryDto, PaginationMetaDto
 │   │
-│   ├── routes/
-│   │   ├── index.js               # Mounts all route groups
-│   │   ├── auth.routes.js         # /api/auth/*
-│   │   ├── users.routes.js        # /api/users/*
-│   │   ├── candidates.routes.js   # /api/candidates/*  (public browse)
-│   │   ├── vacancies.routes.js    # /api/vacancies/*   (public browse)
-│   │   ├── engagement.routes.js   # /api/saved/*, /api/apply, /api/inquire
-│   │   ├── conversations.routes.js
-│   │   ├── notifications.routes.js
-│   │   ├── categories.routes.js
-│   │   └── admin/
-│   │       ├── index.js           # Mounts all /api/admin/* routes
-│   │       ├── auth.routes.js     # /api/admin/auth/*
-│   │       ├── dashboard.routes.js
-│   │       ├── candidates.routes.js
-│   │       ├── vacancies.routes.js
-│   │       ├── applications.routes.js
-│   │       ├── inquiries.routes.js
-│   │       ├── pipeline.routes.js
-│   │       ├── users.routes.js
-│   │       ├── staff.routes.js
-│   │       └── settings.routes.js
+│   ├── modules/
+│   │   ├── auth/                  # User & Admin authentication module
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── dto/               # LoginDto, RegisterDto, VerifyOtpDto
+│   │   │   └── strategies/        # UserJwtStrategy, AdminJwtStrategy
+│   │   │
+│   │   ├── users/                 # User profiles management
+│   │   │   ├── users.controller.ts
+│   │   │   ├── users.service.ts
+│   │   │   └── dto/               # UpdateUserProfileDto, UpdateEmployerProfileDto
+│   │   │
+│   │   ├── candidates/            # Candidate profiles & media
+│   │   │   ├── candidates.controller.ts
+│   │   │   ├── admin-candidates.controller.ts
+│   │   │   ├── candidates.service.ts
+│   │   │   └── dto/               # CreateCandidateDto, QueryCandidateDto
+│   │   │
+│   │   ├── vacancies/             # Job vacancies management
+│   │   │   ├── vacancies.controller.ts
+│   │   │   ├── admin-vacancies.controller.ts
+│   │   │   ├── vacancies.service.ts
+│   │   │   └── dto/               # CreateVacancyDto, QueryVacancyDto
+│   │   │
+│   │   ├── applications/          # Job applications flow
+│   │   │   ├── applications.controller.ts
+│   │   │   └── applications.service.ts
+│   │   │
+│   │   ├── inquiries/             # Candidate inquiries flow
+│   │   │   ├── inquiries.controller.ts
+│   │   │   └── inquiries.service.ts
+│   │   │
+│   │   ├── pipeline/              # 5-stage hiring pipeline
+│   │   │   ├── pipeline.controller.ts
+│   │   │   └── pipeline.service.ts
+│   │   │
+│   │   ├── notifications/         # Expo Push + in-app notifications
+│   │   │   ├── notifications.controller.ts
+│   │   │   ├── push.service.ts    # Expo Push API client
+│   │   │   └── notifications.service.ts
+│   │   │
+│   │   ├── sms/                   # SMSEthiopia integration
+│   │   │   └── sms.service.ts
+│   │   │
+│   │   ├── media/                 # Cloudinary upload service
+│   │   │   └── media.service.ts
+│   │   │
+│   │   ├── prisma/                # Database service
+│   │   │   ├── prisma.module.ts
+│   │   │   └── prisma.service.ts
+│   │   │
+│   │   └── jobs/                  # BullMQ job processors
+│   │       ├── vacancy-expiry.processor.ts
+│   │       └── otp-cleanup.processor.ts
 │   │
-│   ├── controllers/
-│   │   ├── auth.controller.js
-│   │   ├── users.controller.js
-│   │   ├── candidates.controller.js
-│   │   ├── vacancies.controller.js
-│   │   ├── engagement.controller.js
-│   │   ├── conversations.controller.js
-│   │   ├── notifications.controller.js
-│   │   └── admin/
-│   │       ├── dashboard.controller.js
-│   │       ├── candidates.controller.js
-│   │       ├── vacancies.controller.js
-│   │       ├── applications.controller.js
-│   │       ├── inquiries.controller.js
-│   │       ├── pipeline.controller.js
-│   │       ├── users.controller.js
-│   │       ├── staff.controller.js
-│   │       └── settings.controller.js
-│   │
-│   ├── services/
-│   │   ├── notification.service.js  # Orchestrates push + SMS + in-app
-│   │   ├── push.service.js          # Firebase FCM dispatch
-│   │   ├── sms.service.js           # Africa's Talking dispatch
-│   │   ├── storage.service.js       # S3 upload/delete/presign
-│   │   ├── pipeline.service.js      # Stage transition logic
-│   │   ├── otp.service.js           # OTP generation and verification
-│   │   └── analytics.service.js     # View/click logging helpers
-│   │
-│   ├── db/
-│   │   ├── migrations/              # Numbered SQL migration files
-│   │   │   ├── 001_subscription_plans.sql
-│   │   │   ├── 002_agencies.sql
-│   │   │   ├── 003_agency_subscriptions.sql
-│   │   │   ├── 004_admin_users.sql
-│   │   │   ├── 005_users.sql
-│   │   │   ├── 006_otp_verifications.sql
-│   │   │   ├── 007_password_resets.sql
-│   │   │   ├── 008_device_tokens.sql
-│   │   │   ├── 009_user_profiles.sql
-│   │   │   ├── 010_categories.sql
-│   │   │   ├── 011_candidates.sql
-│   │   │   ├── 012_candidate_details.sql
-│   │   │   ├── 013_job_vacancies.sql
-│   │   │   ├── 014_vacancy_requirements.sql
-│   │   │   ├── 015_applications.sql
-│   │   │   ├── 016_candidate_inquiries.sql
-│   │   │   ├── 017_saved_items.sql
-│   │   │   ├── 018_hiring_pipelines.sql
-│   │   │   ├── 019_conversations.sql
-│   │   │   ├── 020_notifications.sql
-│   │   │   ├── 021_agency_config.sql
-│   │   │   ├── 022_analytics.sql
-│   │   │   └── 023_moderation.sql
-│   │   ├── seeds/
-│   │   │   ├── categories.sql
-│   │   │   └── subscription_plans.sql
-│   │   └── migrate.js               # Migration runner script
-│   │
-│   ├── utils/
-│   │   ├── jwt.js                   # Token generation and verification helpers
-│   │   ├── paginate.js              # Pagination query builder
-│   │   ├── filters.js               # Dynamic filter query builder
-│   │   └── logger.js                # Winston logger setup
-│   │
-│   ├── jobs/
-│   │   └── cron.js                  # Scheduled jobs (expire vacancies, cleanup OTPs)
-│   │
-│   ├── app.js                       # Express app setup
-│   └── server.js                    # HTTP server entry point
+│   ├── app.module.ts              # Root NestJS module
+│   └── main.ts                    # Fastify adapter bootstrap & OpenAPI setup
+│
+├── prisma/
+│   ├── schema.prisma              # Complete Prisma database schema
+│   ├── migrations/                # Prisma migration history
+│   └── seed.ts                    # Database seed script (categories, plans)
 │
 ├── .env
 ├── .env.example
+├── nest-cli.json
+├── tsconfig.json
 └── package.json
 ```
 
-### Mobile (React Native)
+### Mobile (React Native + Expo)
 
 ```
-mobile/
-├── src/
-│   ├── api/
-│   │   ├── client.js              # Axios instance with token interceptors
-│   │   ├── auth.api.js
-│   │   ├── candidates.api.js
-│   │   ├── vacancies.api.js
-│   │   ├── engagement.api.js
-│   │   ├── conversations.api.js
-│   │   ├── notifications.api.js
-│   │   └── admin/
-│   │       ├── candidates.api.js
-│   │       ├── vacancies.api.js
-│   │       ├── applications.api.js
-│   │       ├── inquiries.api.js
-│   │       ├── pipeline.api.js
-│   │       └── settings.api.js
-│   │
-│   ├── store/
-│   │   ├── index.js               # Zustand store root
-│   │   ├── auth.store.js          # User/admin auth state
-│   │   ├── candidates.store.js
-│   │   ├── vacancies.store.js
-│   │   └── notifications.store.js
-│   │
-│   ├── navigation/
-│   │   ├── RootNavigator.js       # Switches between Auth, User, Admin
-│   │   ├── AuthNavigator.js       # Login/Register/OTP stack
-│   │   ├── UserNavigator.js       # Bottom tabs for regular users
-│   │   └── AdminNavigator.js      # Bottom tabs for admin users
-│   │
-│   ├── screens/
-│   │   ├── auth/
-│   │   │   ├── WelcomeScreen.js
-│   │   │   ├── LoginScreen.js
-│   │   │   ├── RegisterScreen.js
-│   │   │   ├── OTPVerifyScreen.js
-│   │   │   ├── ForgotPasswordScreen.js
-│   │   │   └── AdminLoginScreen.js
-│   │   ├── onboarding/
-│   │   │   └── ModeSelectorScreen.js   # Pick job seeker or employer
-│   │   ├── employer/
-│   │   │   ├── CandidateBrowseScreen.js
-│   │   │   ├── CandidateDetailScreen.js
-│   │   │   ├── SavedCandidatesScreen.js
-│   │   │   └── InquiryFormScreen.js
-│   │   ├── jobseeker/
-│   │   │   ├── VacancyBrowseScreen.js
-│   │   │   ├── VacancyDetailScreen.js
-│   │   │   ├── SavedVacanciesScreen.js
-│   │   │   └── ApplicationFormScreen.js
-│   │   ├── shared/
-│   │   │   ├── ConversationsScreen.js
-│   │   │   ├── ChatScreen.js
-│   │   │   ├── NotificationsScreen.js
-│   │   │   └── ProfileScreen.js
-│   │   └── admin/
-│   │       ├── DashboardScreen.js
-│   │       ├── CandidateListScreen.js
-│   │       ├── AddCandidateScreen.js
-│   │       ├── EditCandidateScreen.js
-│   │       ├── CandidateDetailScreen.js
-│   │       ├── VacancyListScreen.js
-│   │       ├── AddVacancyScreen.js
-│   │       ├── EditVacancyScreen.js
-│   │       ├── ApplicationListScreen.js
-│   │       ├── ApplicationDetailScreen.js
-│   │       ├── InquiryListScreen.js
-│   │       ├── InquiryDetailScreen.js
-│   │       ├── PipelineScreen.js
-│   │       ├── PipelineDetailScreen.js
-│   │       ├── UserListScreen.js
-│   │       └── SettingsScreen.js
-│   │
-│   ├── components/
-│   │   ├── cards/
-│   │   │   ├── CandidateCard.js       # Candidate list card
-│   │   │   └── VacancyCard.js         # Vacancy list card
-│   │   ├── ui/
-│   │   │   ├── Button.js
-│   │   │   ├── Input.js
-│   │   │   ├── Badge.js
-│   │   │   ├── Avatar.js
-│   │   │   ├── Skeleton.js
-│   │   │   ├── EmptyState.js
-│   │   │   └── Modal.js
-│   │   ├── ContactButtons.js          # WhatsApp / Telegram / IMO / Phone / In-App row
-│   │   ├── PipelineStageBar.js        # Visual 5-stage progress bar
-│   │   ├── FilterSheet.js             # Bottom sheet filter panel
-│   │   ├── VideoPlayer.js             # Candidate intro video
-│   │   ├── DocumentPicker.js          # Reusable document upload component
-│   │   └── NotificationBell.js        # Header notification icon with unread count
-│   │
-│   ├── hooks/
-│   │   ├── useAuth.js
-│   │   ├── useNotifications.js        # Firebase FCM setup
-│   │   ├── usePagination.js           # Infinite scroll helper
-│   │   └── useDeepLink.js
-│   │
-│   └── utils/
-│       ├── formatters.js              # Date, salary, duration formatters
-│       ├── contactLinks.js            # Build WhatsApp/Telegram/IMO URLs
-│       ├── validators.js
-│       └── constants.js              # Stage names, country lists, categories
+frontend/ (mobile)
+├── app/                           # Expo Router file-based routing
+│   ├── (auth)/                    # Auth stack (welcome, login, register, otp)
+│   │   ├── welcome.tsx
+│   │   ├── login.tsx
+│   │   ├── register.tsx
+│   │   └── otp-verify.tsx
+│   ├── (tabs)/                    # Main tab navigator
+│   │   ├── index.tsx              # Home (Candidates / Vacancies based on mode)
+│   │   ├── saved.tsx
+│   │   ├── messages.tsx
+│   │   ├── notifications.tsx
+│   │   └── profile.tsx
+│   ├── candidate/
+│   │   └── [id].tsx               # Candidate detail screen
+│   ├── vacancy/
+│   │   └── [id].tsx               # Vacancy detail screen
+│   └── _layout.tsx                # Root layout with QueryClientProvider
 │
-├── android/
-├── ios/
-├── google-services.json               # Firebase (Android)
-├── GoogleService-Info.plist           # Firebase (iOS)
+├── src/
+│   ├── api/                       # Axios client & TanStack Query options
+│   │   ├── client.ts
+│   │   ├── auth.api.ts
+│   │   ├── candidates.api.ts
+│   │   └── vacancies.api.ts
+│   │
+│   ├── hooks/                     # TanStack Query custom hooks
+│   │   ├── useCandidates.ts       # Query & mutation hooks for candidates
+│   │   ├── useVacancies.ts        # Query & mutation hooks for vacancies
+│   │   ├── useAuth.ts             # Auth state & mutation hooks
+│   │   └── useNotifications.ts    # Expo Push Notifications registration
+│   │
+│   ├── store/                     # Zustand stores
+│   │   ├── auth.store.ts          # JWT token & user session state
+│   │   └── ui.store.ts            # Active mode (employer/jobseeker) & filters
+│   │
+│   ├── components/                # Reusable UI components
+│   │   ├── candidate-card.tsx
+│   │   ├── vacancy-card.tsx
+│   │   ├── contact-buttons.tsx    # WhatsApp, Telegram, IMO, Phone
+│   │   ├── video-player.tsx       # Expo Video candidate intro
+│   │   └── ui/                    # Base UI elements
+│   │
+│   └── utils/                     # Formatting, deep links, validators
+│
+├── app.json                       # Expo config (slug, scheme, plugins)
+├── tailwind.config.js             # NativeWind styling configuration
+├── tsconfig.json
+└── package.json
+```
+
+### Admin Panel (Next.js)
+
+```
+admin/
+├── app/                           # Next.js App Router
+│   ├── (auth)/                    # Admin login layout & screen
+│   │   └── login/page.tsx
+│   ├── (dashboard)/               # Authenticated admin layout & sidebar
+│   │   ├── layout.tsx
+│   │   ├── page.tsx               # Analytics & dashboard overview
+│   │   ├── candidates/            # Candidate CRUD & media management
+│   │   ├── vacancies/             # Vacancy posting & management
+│   │   ├── applications/         # Job applications list & detail
+│   │   ├── inquiries/            # Employer inquiries inbox
+│   │   ├── pipeline/             # Visual hiring pipeline board
+│   │   ├── staff/                 # Staff team management
+│   │   └── settings/             # Agency configuration & contact channels
+│   └── layout.tsx                 # Root layout with providers
+│
+├── components/
+│   ├── ui/                        # shadcn/ui components (Button, Dialog, Table, Badge, etc.)
+│   ├── dashboard/                 # Analytics charts & summary cards
+│   ├── pipeline/                  # Pipeline stage kanban / progress bar
+│   └── layout/                    # Admin sidebar, navbar, user menu
+│
+├── lib/                           # API client, auth helpers, utility functions
+├── hooks/                         # TanStack Query hooks for admin endpoints
+├── types/                         # TypeScript interfaces and DTO definitions
+├── tailwind.config.ts
 └── package.json
 ```
 
@@ -402,116 +394,153 @@ mobile/
 # Server
 NODE_ENV=development
 PORT=5000
+API_PREFIX=api/v1
 
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=recruitment_db
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_SSL=false
+# Neon Managed PostgreSQL (Prisma Connection)
+DATABASE_URL="postgresql://user:password@ep-cool-name-123456.us-east-2.aws.neon.tech/recruitment_db?sslmode=require"
+DIRECT_URL="postgresql://user:password@ep-cool-name-123456.us-east-2.aws.neon.tech/recruitment_db?sslmode=require"
 
-# JWT
-JWT_SECRET=your_very_long_random_secret_here
+# Redis & BullMQ
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# JWT Secrets
+JWT_SECRET=your_super_secret_user_jwt_key_here
 JWT_EXPIRES_IN=30d
-ADMIN_JWT_SECRET=different_secret_for_admins
+ADMIN_JWT_SECRET=different_super_secret_admin_jwt_key_here
 ADMIN_JWT_EXPIRES_IN=8h
 
-# AWS S3
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_S3_BUCKET=recruitment-agency-media
-AWS_CLOUDFRONT_URL=https://d1234abcd.cloudfront.net
+# Cloudinary (Media Storage)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-# Firebase Admin SDK
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+# SMSEthiopia (SMS & OTP Provider)
+SMS_ETHIOPIA_API_KEY=your_smsethiopia_api_key
+SMS_ETHIOPIA_SENDER_ID=AGENCY
 
-# Africa's Talking
-AT_API_KEY=your_africas_talking_api_key
-AT_USERNAME=your_username
-AT_SENDER_ID=AGENCY
+# Expo Push Notifications
+EXPO_ACCESS_TOKEN=your_expo_access_token
 
-# OTP
-OTP_EXPIRY_MINUTES=10
-OTP_LENGTH=6
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-AUTH_RATE_LIMIT_MAX=10
+# Sentry
+SENTRY_DSN=https://xxxxxxxx.ingest.sentry.io/xxxxxxx
 
 # CORS
-ALLOWED_ORIGINS=http://localhost:3000,https://yourwebdashboard.com
-
-# App
-APP_NAME=EthioRecruit
+ALLOWED_ORIGINS=http://localhost:3000,https://admin.yourapp.com
 ```
 
-### Mobile `.env` (react-native-dotenv)
+### Mobile `.env` (Expo Extra)
 
 ```env
-API_BASE_URL=https://api.yourapp.com/api
+EXPO_PUBLIC_API_BASE_URL=https://api.yourapp.com/api/v1
+EXPO_PUBLIC_PROJECT_ID=your-expo-project-id
+```
+
+### Admin Panel `.env.local` (Next.js)
+
+```env
+NEXT_PUBLIC_API_BASE_URL=https://api.yourapp.com/api/v1
 ```
 
 ---
 
-## 6. Database Setup & Migrations
+## 6. Database Setup & Migrations (Prisma + Neon)
 
-### Setup Script
+### Setup & Migration Commands
 
 ```bash
-# Create database
-psql -U postgres -c "CREATE DATABASE recruitment_db;"
+# Generate Prisma Client
+npx prisma generate
 
-# Run migrations in order
-node src/db/migrate.js up
+# Create and apply migrations on Neon database
+npx prisma migrate dev --name init
 
-# Seed initial data (categories + subscription plans)
-psql -U postgres -d recruitment_db -f src/db/seeds/subscription_plans.sql
-psql -U postgres -d recruitment_db -f src/db/seeds/categories.sql
+# Seed initial database records (categories, plans)
+npx prisma db seed
+
+# Open Prisma Studio (GUI database editor)
+npx prisma studio
 ```
 
-### Migration Runner (`src/db/migrate.js`)
+### Prisma Schema Overview (`prisma/schema.prisma` excerpt)
 
-```javascript
-const { Pool } = require('pg');
-const fs = require('fs');
-const path = require('path');
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-async function runMigrations() {
-  // Create migrations tracking table
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      id SERIAL PRIMARY KEY,
-      filename VARCHAR(255) UNIQUE NOT NULL,
-      executed_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-
-  const migrationsDir = path.join(__dirname, 'migrations');
-  const files = fs.readdirSync(migrationsDir).sort();
-
-  for (const file of files) {
-    const { rows } = await pool.query(
-      'SELECT id FROM schema_migrations WHERE filename = $1', [file]
-    );
-    if (rows.length === 0) {
-      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-      await pool.query(sql);
-      await pool.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [file]);
-      console.log(`✓ Ran migration: ${file}`);
-    }
-  }
+```prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-runMigrations().then(() => process.exit(0)).catch(err => {
-  console.error(err); process.exit(1);
-});
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  STAFF
+}
+
+enum PreferredMode {
+  JOB_SEEKER
+  EMPLOYER
+}
+
+enum PipelineStage {
+  INTERVIEWING
+  MEDICAL_BIOMETRICS
+  VISA_PROCESSING
+  PRE_DEPARTURE_TRAINING
+  DEPLOYED
+}
+
+model Agency {
+  id               String            @id @default(uuid())
+  name             String
+  licenseNumber    String?
+  logoUrl          String?
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  adminUsers       AdminUser[]
+  candidates       Candidate[]
+  vacancies        JobVacancy[]
+  hiringPipelines  HiringPipeline[]
+
+  @@map("agencies")
+}
+
+model AdminUser {
+  id        String   @id @default(uuid())
+  agencyId  String   @map("agency_id")
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  email     String   @unique
+  password  String
+  role      Role     @default(ADMIN)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  agency    Agency   @relation(fields: [agencyId], references: [id])
+
+  @@map("admin_users")
+}
+
+model User {
+  id            String        @id @default(uuid())
+  firstName     String        @map("first_name")
+  lastName      String        @map("last_name")
+  phone         String        @unique
+  email         String?       @unique
+  password      String
+  preferredMode PreferredMode @default(JOB_SEEKER) @map("preferred_mode")
+  phoneVerified Boolean       @default(false) @map("phone_verified")
+  isActive      Boolean       @default(true) @map("is_active")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@map("users")
+}
 ```
 
 ### Key Indexes (run after migrations)
@@ -649,73 +678,80 @@ Admin Token payload:
    → Updates password hash, invalidates token
 ```
 
-### Auth Middleware (userAuth.js)
+### Auth Guard (`user-jwt.guard.ts`)
 
-```javascript
-const jwt = require('jsonwebtoken');
+```typescript
+import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 
-module.exports = async (req, res, next) => {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
+@Injectable()
+export class UserJwtGuard extends AuthGuard('user-jwt') {
+  canActivate(context: ExecutionContext) {
+    return super.canActivate(context);
   }
-  const token = header.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.type !== 'user') {
-      return res.status(401).json({ error: 'Invalid token type' });
+
+  handleRequest(err: any, user: any) {
+    if (err || !user) {
+      throw err || new UnauthorizedException('Invalid or expired user token');
     }
-    req.user = { id: decoded.sub, mode: decoded.mode };
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return user;
   }
-};
+}
 ```
 
-### Admin Auth Middleware (adminAuth.js)
+### Admin Auth Guard (`admin-jwt.guard.ts`)
 
-```javascript
-const jwt = require('jsonwebtoken');
+```typescript
+import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 
-module.exports = async (req, res, next) => {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
+@Injectable()
+export class AdminJwtGuard extends AuthGuard('admin-jwt') {
+  canActivate(context: ExecutionContext) {
+    return super.canActivate(context);
   }
-  const token = header.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
-    if (decoded.type !== 'admin') {
-      return res.status(401).json({ error: 'Invalid token type' });
+
+  handleRequest(err: any, admin: any) {
+    if (err || !admin) {
+      throw err || new UnauthorizedException('Invalid or expired admin token');
     }
-    req.admin = {
-      id: decoded.sub,
-      role: decoded.role,
-      agency_id: decoded.agency_id
-    };
-    req.agencyId = decoded.agency_id; // injected for multi-tenancy
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return admin;
   }
-};
+}
 ```
 
-### Role Guard Middleware
+### Role Guard & Decorator (`roles.guard.ts`)
 
-```javascript
-// requireRole.js
-module.exports = (...allowedRoles) => (req, res, next) => {
-  if (!req.admin) return res.status(401).json({ error: 'Unauthorized' });
-  if (!allowedRoles.includes(req.admin.role)) {
-    return res.status(403).json({ error: 'Insufficient permissions' });
+```typescript
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
+import { Role } from '@prisma/client';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!requiredRoles) return true;
+
+    const { user } = context.switchToHttp().getRequest();
+    if (!user || !requiredRoles.includes(user.role)) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+    return true;
   }
-  next();
-};
+}
 
-// Usage in routes:
-router.delete('/candidates/:id', adminAuth, requireRole('super_admin', 'admin'), deleteCandidate);
+// Usage in NestJS Controller:
+// @UseGuards(AdminJwtGuard, RolesGuard)
+// @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+// @Delete(':id')
+// async deleteCandidate(@Param('id') id: string) { ... }
 ```
 
 ---
@@ -1596,160 +1632,138 @@ Remove a contact channel.
 
 ---
 
-## 9. File Storage — AWS S3 + CloudFront
+## 9. File Storage — Cloudinary
 
-### S3 Bucket Structure
+### Folder & Asset Structure
 
 ```
-recruitment-agency-media/
+Cloudinary Account /
 ├── agencies/
 │   └── {agency_id}/
-│       ├── logos/
-│       │   └── {filename}.jpg
-│       └── banners/
-│           └── {filename}.jpg
+│       ├── logos/           # Agency brand logos
+│       └── banners/         # Agency promotional banners
 │
 ├── candidates/
 │   └── {agency_id}/
 │       └── {candidate_id}/
-│           ├── photos/
-│           │   └── profile.jpg
-│           ├── videos/
-│           │   ├── intro.mp4
-│           │   └── thumbnail.jpg
-│           └── documents/
-│               ├── passport.pdf
-│               ├── medical_certificate.pdf
-│               └── ...
+│           ├── photos/      # Profile photos (auto-cropped, face detection)
+│           ├── videos/      # Intro video clips (auto HLS/MP4 transcoding & poster frame)
+│           └── documents/   # PDF passports, medical certificates
 │
 ├── pipeline/
 │   └── {agency_id}/
-│       └── {pipeline_id}/
-│           ├── offer_letter.pdf
-│           ├── visa.pdf
-│           └── flight_ticket.pdf
+│       └── {pipeline_id}/   # Offer letters, visa documents, tickets
 │
 └── users/
-    └── {user_id}/
-        └── profile_photo.jpg
+    └── {user_id}/           # Employer & candidate app profile photos
 ```
 
-### Upload Flow
+### Media Service Implementation (`media.service.ts`)
 
-```javascript
-// storage.service.js
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
+```typescript
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { v2 as cloudinary } from 'cloudinary';
+import { ConfigService } from '@nestjs/config';
 
-const s3 = new S3Client({ region: process.env.AWS_REGION });
+@Injectable()
+export class MediaService {
+  constructor(private configService: ConfigService) {
+    cloudinary.config({
+      cloud_name: this.configService.get('CLOUDINARY_CLOUD_NAME'),
+      api_key: this.configService.get('CLOUDINARY_API_KEY'),
+      api_secret: this.configService.get('CLOUDINARY_API_SECRET'),
+    });
+  }
 
-async function uploadFile({ buffer, mimetype, folder, filename }) {
-  const ext = mimetype.split('/')[1];
-  const key = `${folder}/${filename || uuidv4()}.${ext}`;
+  async uploadImage(fileBuffer: Buffer, folder: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: 'image',
+          transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+        },
+        (error, result) => {
+          if (error) return reject(new InternalServerErrorException('Cloudinary image upload failed'));
+          resolve(result!.secure_url);
+        },
+      ).end(fileBuffer);
+    });
+  }
 
-  await s3.send(new PutObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET,
-    Key: key,
-    Body: buffer,
-    ContentType: mimetype,
-  }));
+  async uploadVideo(fileBuffer: Buffer, folder: string): Promise<{ url: string; thumbnailUrl: string }> {
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: 'video',
+          eager: [{ format: 'jpg', transformation: [{ width: 500, crop: 'scale' }] }],
+        },
+        (error, result) => {
+          if (error) return reject(new InternalServerErrorException('Cloudinary video upload failed'));
+          const thumbnailUrl = result!.eager && result!.eager[0] ? result!.eager[0].secure_url : '';
+          resolve({ url: result!.secure_url, thumbnailUrl });
+        },
+      ).end(fileBuffer);
+    });
+  }
 
-  // Return CloudFront URL
-  return `${process.env.AWS_CLOUDFRONT_URL}/${key}`;
-}
-
-async function deleteFile(cloudFrontUrl) {
-  const key = cloudFrontUrl.replace(`${process.env.AWS_CLOUDFRONT_URL}/`, '');
-  await s3.send(new DeleteObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET,
-    Key: key
-  }));
-}
-
-module.exports = { uploadFile, deleteFile };
-```
-
-### S3 Bucket Policy (IAM — least privilege)
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["s3:PutObject", "s3:DeleteObject"],
-      "Resource": "arn:aws:s3:::recruitment-agency-media/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["s3:GetObject"],
-      "Resource": "arn:aws:s3:::recruitment-agency-media/*",
-      "Principal": { "Service": "cloudfront.amazonaws.com" }
-    }
-  ]
+  async deleteMedia(publicId: string): Promise<void> {
+    await cloudinary.uploader.destroy(publicId);
+  }
 }
 ```
-
-### CloudFront Configuration
-
-- **Origin:** S3 bucket (OAC — Origin Access Control, not public)
-- **Cache policy:** 1 year for media (photos, videos), 0 for documents
-- **Signed URLs:** Use for sensitive documents (not needed for candidate photos which are semi-public)
 
 ---
 
-## 10. Push Notifications — Firebase
+## 10. Push Notifications — Expo Push Notifications
 
-### Setup
+### Overview
+Replaces Firebase Cloud Messaging (FCM). The backend uses `expo-server-sdk` to dispatch push tickets to Expo's Push API, which routes notifications to APNs (iOS) and FCM/Android natively.
 
-1. Create Firebase project at console.firebase.google.com
-2. Add iOS and Android apps to the project
-3. Download `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
-4. Generate a service account key for the backend (Admin SDK)
+### Backend — Dispatch Service (`push.service.ts`)
 
-### Backend — Dispatch Service
+```typescript
+import { Injectable, Logger } from '@nestjs/common';
+import { Expo, ExpoPushMessage } from 'expo-server-sdk';
+import { PrismaService } from '../prisma/prisma.service';
 
-```javascript
-// services/push.service.js
-const admin = require('firebase-admin');
+@Injectable()
+export class PushNotificationService {
+  private expo = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });
+  private readonly logger = new Logger(PushNotificationService.name);
 
-admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL
-  })
-});
+  constructor(private prisma: PrismaService) {}
 
-async function sendPushNotification({ token, title, body, data = {} }) {
-  try {
-    await admin.messaging().send({
-      token,
-      notification: { title, body },
-      data: Object.fromEntries(
-        Object.entries(data).map(([k, v]) => [k, String(v)])
-      ),
-      android: { priority: 'high' },
-      apns: { payload: { aps: { sound: 'default' } } }
+  async sendToUser(userId: string, title: string, body: string, data: Record<string, any> = {}) {
+    const tokens = await this.prisma.deviceToken.findMany({
+      where: { userId, isActive: true },
     });
-  } catch (err) {
-    // If token is invalid, deactivate it in device_tokens
-    if (err.code === 'messaging/registration-token-not-registered') {
-      await db.query('UPDATE device_tokens SET is_active = false WHERE token = $1', [token]);
-    }
-    console.error('Push failed:', err.message);
-  }
-}
 
-async function sendToUser(userId, { title, body, data }) {
-  const { rows } = await db.query(
-    'SELECT token FROM device_tokens WHERE user_id = $1 AND is_active = true',
-    [userId]
-  );
-  for (const row of rows) {
-    await sendPushNotification({ token: row.token, title, body, data });
+    const messages: ExpoPushMessage[] = [];
+    for (const tokenRecord of tokens) {
+      if (!Expo.isExpoPushToken(tokenRecord.token)) {
+        this.logger.error(`Invalid Expo Push Token: ${tokenRecord.token}`);
+        continue;
+      }
+      messages.push({
+        to: tokenRecord.token,
+        sound: 'default',
+        title,
+        body,
+        data,
+      });
+    }
+
+    const chunks = this.expo.chunkPushNotifications(messages);
+    for (const chunk of chunks) {
+      try {
+        const ticketChunk = await this.expo.sendPushNotificationsAsync(chunk);
+        this.logger.log(`Push sent: ${ticketChunk.length} tickets`);
+      } catch (error) {
+        this.logger.error('Error sending Expo push notification chunk', error);
+      }
+    }
   }
 }
 ```
@@ -1762,138 +1776,89 @@ async function sendToUser(userId, { title, body, data }) {
 | Application status changed | User | "Application Update" | "Your application for {vacancy} is now {status}" |
 | New candidate inquiry | Admin | "New Inquiry" | "An employer inquired about {candidate}" |
 | Inquiry responded | User | "Inquiry Update" | "The agency responded to your inquiry" |
-| Pipeline stage changed | User (if job seeker applied) | "Hiring Update" | "Process moved to {stage}" |
-| New vacancy posted | All job seekers | "New Job Available" | "{title} in {country}" |
-| New candidate added | All employers | "New Candidate Available" | "A new {category} is available" |
+| Pipeline stage changed | User / Candidate | "Hiring Status Update" | "Your process moved to {stage}" |
 
-### Mobile — FCM Setup
+### Mobile — Register Push Hook (`useNotifications.ts`)
 
-```javascript
-// hooks/useNotifications.js
-import messaging from '@react-native-firebase/messaging';
+```typescript
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 import { useEffect } from 'react';
-import { useAuthStore } from '../store/auth.store';
-import api from '../api/client';
+import { Platform } from 'react-native';
+import { api } from '../api/client';
 
 export function useNotifications() {
-  const { isAuthenticated } = useAuthStore();
-
   useEffect(() => {
-    if (!isAuthenticated) return;
-
-    async function setup() {
-      const permission = await messaging().requestPermission();
-      if (permission === messaging.AuthorizationStatus.AUTHORIZED) {
-        const token = await messaging().getToken();
-        await api.put('/users/me/device-token', {
-          token, platform: Platform.OS
-        });
+    async function registerForPush() {
+      if (!Device.isDevice) return;
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
       }
+      if (finalStatus !== 'granted') return;
+
+      const tokenData = await Notifications.getExpoPushTokenAsync();
+      await api.post('/users/me/device-tokens', {
+        token: tokenData.data,
+        platform: Platform.OS,
+      });
     }
 
-    setup();
-
-    // Foreground message handler
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      // Show local notification using @notifee/react-native
-      await notifee.displayNotification({
-        title: remoteMessage.notification.title,
-        body: remoteMessage.notification.body,
-        data: remoteMessage.data,
-      });
-    });
-
-    return unsubscribe;
-  }, [isAuthenticated]);
+    registerForPush();
+  }, []);
 }
 ```
 
 ---
 
-## 11. SMS — Africa's Talking
+## 11. SMS & OTP — SMSEthiopia
 
-### Setup
+### Integration Strategy
+Replaces Africa's Talking for SMS delivery in Ethiopia. Used for phone number verification, OTP logins, password resets, and critical status alerts.
 
-```javascript
-// config/africasTalking.js
-const AfricasTalking = require('africastalking');
+### SMS Service Implementation (`sms.service.ts`)
 
-const client = AfricasTalking({
-  apiKey: process.env.AT_API_KEY,
-  username: process.env.AT_USERNAME
-});
+```typescript
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
 
-module.exports = client.SMS;
-```
+@Injectable()
+export class SmsEthiopiaService {
+  private readonly logger = new Logger(SmsEthiopiaService.name);
+  private readonly apiKey: string;
+  private readonly senderId: string;
 
-### SMS Service
-
-```javascript
-// services/sms.service.js
-const sms = require('../config/africasTalking');
-
-async function sendSMS({ to, message }) {
-  try {
-    await sms.send({
-      to: Array.isArray(to) ? to : [to],
-      message,
-      from: process.env.AT_SENDER_ID
-    });
-  } catch (err) {
-    console.error('SMS failed:', err.message);
-    // Do not throw — SMS is non-blocking
+  constructor(private configService: ConfigService) {
+    this.apiKey = this.configService.get<string>('SMS_ETHIOPIA_API_KEY') || '';
+    this.senderId = this.configService.get<string>('SMS_ETHIOPIA_SENDER_ID') || 'AGENCY';
   }
-}
 
-async function sendOTP({ phone, otp, purpose }) {
-  const messages = {
-    registration: `Your EthioRecruit verification code is: ${otp}. Valid for 10 minutes.`,
-    password_reset: `Your EthioRecruit password reset code is: ${otp}. Valid for 10 minutes.`
-  };
-  await sendSMS({ to: phone, message: messages[purpose] || `Your code is: ${otp}` });
-}
-
-module.exports = { sendSMS, sendOTP };
-```
-
-### OTP Generation
-
-```javascript
-// services/otp.service.js
-const crypto = require('crypto');
-
-function generateOTP(length = 6) {
-  const digits = '0123456789';
-  let otp = '';
-  const bytes = crypto.randomBytes(length);
-  for (let i = 0; i < length; i++) {
-    otp += digits[bytes[i] % 10];
+  async sendSMS(to: string, message: string): Promise<boolean> {
+    try {
+      const response = await axios.post('https://api.smsethiopia.com/v1/sms/send', {
+        key: this.apiKey,
+        to,
+        message,
+        sender: this.senderId,
+      });
+      return response.data?.status === 'success';
+    } catch (error) {
+      this.logger.error(`SMSEthiopia dispatch failed to ${to}: ${error.message}`);
+      return false;
+    }
   }
-  return otp;
-}
 
-async function createAndSendOTP({ phone, purpose, userId = null }) {
-  const otp = generateOTP(6);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-  // Invalidate previous OTPs for this phone+purpose
-  await db.query(
-    'DELETE FROM otp_verifications WHERE identifier = $1 AND purpose = $2',
-    [phone, purpose]
-  );
-
-  // Store new OTP
-  await db.query(
-    `INSERT INTO otp_verifications
-     (identifier, identifier_type, otp_code, purpose, user_id, expires_at)
-     VALUES ($1, 'phone', $2, $3, $4, $5)`,
-    [phone, otp, purpose, userId, expiresAt]
-  );
-
-  // Send via SMS
-  await sendOTP({ phone, otp, purpose });
-
-  return { otp }; // only return in dev/test environments
+  async sendOTP(phone: string, otp: string, purpose: string): Promise<boolean> {
+    const templates: Record<string, string> = {
+      registration: `Your verification code is: ${otp}. Valid for 10 minutes.`,
+      password_reset: `Your password reset code is: ${otp}. Valid for 10 minutes.`,
+    };
+    const message = templates[purpose] || `Your OTP verification code is: ${otp}`;
+    return this.sendSMS(phone, message);
+  }
 }
 ```
 
@@ -2773,119 +2738,94 @@ console.log('[CRON] Cron jobs registered');
 
 ---
 
-## 19. Build Order
+## 18. Deployment & Infrastructure
 
-Build in this exact sequence. Each phase depends on the previous one being complete.
+### 1. Backend Deployment (Docker Container)
 
-### Phase 1 — Backend Foundation (Week 1)
-- [ ] Node.js + Express project scaffolding
-- [ ] PostgreSQL connection pool + migration runner
-- [ ] Run all 23 migrations in order
-- [ ] Seed categories and subscription plans
-- [ ] `POST /api/auth/register` — create user, trigger OTP
-- [ ] Africa's Talking SMS setup + OTP send/verify
-- [ ] `POST /api/auth/otp/verify` — verify, activate user, return JWT
-- [ ] `POST /api/auth/login` — phone + password login
-- [ ] `POST /api/admin/auth/login` — admin email + password login
-- [ ] User auth middleware + Admin auth middleware
-- [ ] Forgot password + reset password flow
-- [ ] AWS S3 bucket creation + CloudFront setup
-- [ ] Storage service (upload, delete, URL generation)
-- [ ] Firebase Admin SDK setup + push service stub
+```dockerfile
+# Dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json prisma ./
+RUN npm ci
+COPY . .
+RUN npx prisma generate
+RUN npm run build
 
-### Phase 2 — Admin Candidate Management (Week 2)
-- [ ] `POST /api/admin/candidates` — create candidate (text fields only)
-- [ ] `POST /api/admin/candidates/:id/photo` — upload photo to S3
-- [ ] `POST /api/admin/candidates/:id/video` — upload intro video to S3
-- [ ] `POST /api/admin/candidates/:id/documents` — upload documents
-- [ ] `GET /api/admin/candidates` — list with filters
-- [ ] `GET /api/admin/candidates/:id` — detail with all relations
-- [ ] `PUT /api/admin/candidates/:id` — update
-- [ ] `PUT /api/admin/candidates/:id/medical` — update medical status
-- [ ] `PUT /api/admin/candidates/:id/feature` — toggle featured
-- [ ] `DELETE /api/admin/candidates/:id` — soft delete
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package*.json ./
+RUN npm ci --only=production
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-### Phase 3 — Admin Vacancy Management (Week 2-3)
-- [ ] `POST /api/admin/vacancies` — create vacancy (save as draft)
-- [ ] `GET /api/admin/vacancies` — list with filters
-- [ ] `GET /api/admin/vacancies/:id` — detail
-- [ ] `PUT /api/admin/vacancies/:id` — update any field
-- [ ] `PUT /api/admin/vacancies/:id/publish` — set active
-- [ ] `PUT /api/admin/vacancies/:id/pause` — set paused
-- [ ] `PUT /api/admin/vacancies/:id/close` — set closed
+EXPOSE 5000
+CMD ["node", "dist/main.js"]
+```
 
-### Phase 4 — User Browse (Week 3)
-- [ ] `GET /api/candidates` — browse with filters + pagination
-- [ ] `GET /api/candidates/:id` — full detail (track view in candidate_views)
-- [ ] `GET /api/vacancies` — browse with filters + pagination
-- [ ] `GET /api/vacancies/:id` — full detail (track view in vacancy_views)
-- [ ] `GET /api/categories` — category list
+### 2. Cloudflare Network Layer
+- **DNS & CDN:** Proxy backend and admin domains through Cloudflare.
+- **SSL / TLS:** Full (Strict) SSL mode.
+- **DDoS & Rate Limiting:** Enforce API rate limits at Cloudflare edge.
 
-### Phase 5 — Engagement (Week 4)
-- [ ] `POST /api/candidates/:id/inquiry` — submit inquiry
-- [ ] `POST /api/vacancies/:id/apply` — submit application
-- [ ] `GET /api/admin/inquiries` + detail + respond
-- [ ] `GET /api/admin/applications` + detail + status update
-- [ ] `POST /api/saved/candidates/:id` + `GET` + `DELETE`
-- [ ] `POST /api/saved/vacancies/:id` + `GET` + `DELETE`
-- [ ] Notification triggers: new inquiry → admin push, application status → user push
+### 3. Managed Database (Neon) & Redis
+- **Neon:** Auto-scaling serverless PostgreSQL. Direct and pooled connection strings.
+- **Redis:** Cloud-hosted or containerized Redis for Caching and BullMQ queue processing.
 
-### Phase 6 — Conversations & Notifications (Week 4-5)
-- [ ] `GET /api/conversations` — list threads
-- [ ] `GET /api/conversations/:id/messages` — message history
-- [ ] `POST /api/conversations/:id/messages` — send text
-- [ ] `POST /api/conversations/:id/messages/attachment` — send file
-- [ ] `GET /api/notifications` + mark read
-- [ ] Admin conversations endpoint for responding from dashboard
-
-### Phase 7 — Hiring Pipeline (Week 5)
-- [ ] `POST /api/admin/pipeline` — create pipeline
-- [ ] `GET /api/admin/pipeline` — list with stage filter
-- [ ] `GET /api/admin/pipeline/:id` — full detail with history
-- [ ] `PUT /api/admin/pipeline/:id/stage` — advance stage
-- [ ] `POST /api/admin/pipeline/:id/documents` — attach documents
-- [ ] `PUT /api/admin/pipeline/:id/outcome` — record outcome
-
-### Phase 8 — Admin Dashboard & Settings (Week 6)
-- [ ] `GET /api/admin/dashboard/stats`
-- [ ] `GET /api/admin/dashboard/recent-activity`
-- [ ] `GET/PUT /api/admin/settings`
-- [ ] `CRUD /api/admin/contact-channels`
-- [ ] `CRUD /api/admin/staff` (super_admin only)
-- [ ] `GET/PUT/block /api/admin/users`
-
-### Phase 9 — Mobile App (Parallel with Backend Phases 2-8)
-Build screens in same order:
-- [ ] AuthNavigator: Welcome, Login, Register, OTP, Mode Selector
-- [ ] AdminNavigator: separate login + dashboard shell
-- [ ] Admin: Add Candidate (multi-step form + media upload)
-- [ ] Admin: Candidate List + Detail
-- [ ] Admin: Add/Edit Vacancy
-- [ ] Admin: Vacancy List
-- [ ] User: Candidate Browse + Detail (with contact buttons)
-- [ ] User: Vacancy Browse + Detail (with apply button)
-- [ ] User: Inquiry Form + Application Form
-- [ ] Admin: Applications Management
-- [ ] Admin: Inquiries Management
-- [ ] Conversations + Chat
-- [ ] Notifications
-- [ ] Admin: Pipeline (list + detail + stage advance)
-- [ ] Profile screen + mode switcher
-- [ ] Admin: Settings
-
-### Phase 10 — Production Hardening (Week 7)
-- [ ] Rate limiting on all auth and upload routes
-- [ ] Input validation on all POST/PUT routes
-- [ ] Error logging (Winston → file or CloudWatch)
-- [ ] Cron jobs (expire vacancies, clean OTPs, sync counts)
-- [ ] PM2 + Nginx + SSL on production server
-- [ ] Firebase Cloud Messaging end-to-end test
-- [ ] Africa's Talking SMS end-to-end test
-- [ ] Beta test with real agency admin + 5 test users
-- [ ] Load test API with realistic concurrency
-- [ ] Submit to App Store + Google Play
+### 4. Monitoring & Error Tracking (Sentry)
+- Backend: `@sentry/nestjs` initialized in `main.ts`
+- Mobile: `@sentry/react-native` initialized in `_layout.tsx`
+- Admin: `@sentry/nextjs` initialized in `instrumentation.ts`
 
 ---
 
-*End of Documentation — v1.0*
-*Total: 41 database tables · 35 screens · 60+ API endpoints · 10-week build plan*
+## 19. Build Order
+
+### Phase 1 — Technical Architecture Documentation Update (Completed)
+- [x] Update `Documentation.md` to version 2.0 (NestJS, Fastify, Prisma, Neon, Cloudinary, Expo Push, SMSEthiopia, Next.js Admin, Docker, Cloudflare, Sentry, White/Green/Blue brand palette).
+
+### Phase 2 — NestJS Backend Scaffolding
+- [ ] Initialize NestJS + Fastify project structure.
+- [ ] Configure `prisma/schema.prisma` with Neon connection strings and run initial migration (`npx prisma migrate dev`).
+- [ ] Create `PrismaService` & `PrismaModule`.
+- [ ] Implement `MediaService` (Cloudinary integration).
+- [ ] Implement `SmsEthiopiaService` (SMSEthiopia integration).
+- [ ] Implement `PushNotificationService` (Expo Push Notifications).
+- [ ] Implement `AuthModule` (User & Admin JWT strategies, Passport, Bcrypt).
+- [ ] Set up Fastify Swagger / OpenAPI documentation endpoints.
+
+### Phase 3 — Next.js Admin Dashboard Scaffolding
+- [ ] Initialize Next.js (App Router, TypeScript, Tailwind CSS, shadcn/ui).
+- [ ] Build layout shell (Sidebar, Header, Brand Palette styling).
+- [ ] Implement TanStack Query provider and Axios client for API authorization.
+- [ ] Build Candidates CRUD & media upload screens.
+- [ ] Build Vacancies CRUD & status control screens.
+- [ ] Build visual 5-stage Hiring Pipeline kanban board.
+- [ ] Build Applications and Inquiries inbox panels.
+
+### Phase 4 — Expo Mobile App Refactoring
+- [ ] Refactor state management to TanStack Query (server state) and Zustand (client state).
+- [ ] Integrate React Hook Form + Zod for authentication and profile input validation.
+- [ ] Integrate `useNotifications` hook for Expo Push Notifications token registration.
+- [ ] Test candidate intro video playback (`expo-video`) and image caching (`expo-image`).
+
+---
+
+## 20. Brand Identity & UI Design System
+
+### Color Palette
+
+| Token | Color Code | Tailwind Class | Usage |
+|---|---|---|---|
+| **Primary White** | `#FFFFFF` | `bg-white`, `text-white` | Card backgrounds, main clean page container, high contrast text |
+| **Brand Green** | `#10B981` | `bg-emerald-500`, `text-emerald-500` | Primary CTA buttons, success status badges, active selection borders |
+| **Brand Blue** | `#3B82F6` | `bg-blue-500`, `text-blue-500` | Secondary CTA, active navigation tabs, informative badges, link highlights |
+| **Dark Neutral** | `#0F172A` | `bg-slate-900`, `text-slate-900` | Main body text, dark mode background, high-contrast headers |
+| **Light Neutral** | `#F8FAFC` | `bg-slate-50`, `border-slate-200` | App background, subtle borders, input field fills |
+
+---
+
+*End of Build Documentation — v2.0*  
+*Stack: NestJS + Fastify · Prisma + Neon · Cloudinary · Expo Push · SMSEthiopia · Next.js Admin · React Native + Expo*
