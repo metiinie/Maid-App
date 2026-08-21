@@ -59,47 +59,29 @@ The agency is always the middle point. No direct contact between employers and c
 ## 2. System Architecture
 
 ```
-┌───────────────────────────┐     ┌────────────────────────────┐
-│   React Native + Expo     │     │   Next.js Admin Dashboard  │
-│   (iOS + Android)         │     │   (Tailwind + shadcn/ui)   │
-│                           │     │                            │
-│  TanStack Query · Zustand │     │  TanStack Query · RHF/Zod  │
-│  Expo Router · RHF/Zod   │     │                            │
-└───────────┬───────────────┘     └──────────┬─────────────────┘
-            │ REST (OpenAPI / Swagger)        │
-            └───────────────┬────────────────┘
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│              NestJS + Fastify API Server                    │
-│              TypeScript · Prisma ORM · OpenAPI              │
-│                                                             │
-│  Guards → Pipes → Controllers → Services → Prisma Client   │
-│  Multi-tenancy Guard (agency_id from JWT)                   │
-│  BullMQ Workers (background jobs via Redis)                 │
-└──────┬──────────┬──────────┬────────────┬──────────┬────────┘
-       │          │          │            │          │
-       ▼          ▼          ▼            ▼          ▼
-┌──────────┐ ┌────────┐ ┌──────────┐ ┌────────┐ ┌────────────┐
-│   Neon   │ │ Redis  │ │Cloudinary│ │ Expo   │ │SMSEthiopia │
-│(Managed  │ │(Cache +│ │(Images + │ │ Push   │ │(OTP / SMS) │
-│ Postgres)│ │BullMQ) │ │ Videos)  │ │Notifs  │ │            │
-└──────────┘ └────────┘ └──────────┘ └────────┘ └────────────┘
-```
-
-### Infrastructure Layer
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Docker (containerized backend + admin)                     │
-│  Cloudflare (DNS, CDN, DDoS protection, SSL)                │
-│  GitHub Actions (CI/CD pipelines)                           │
-│  Sentry (error tracking + performance monitoring)           │
-└─────────────────────────────────────────────────────────────┘
+                       React Native + Expo (SDK 54)
+                                    │
+                    ┌───────────────┼───────────────┐
+                    │               │               │
+                 Android           iOS             Web
+                    │               │               │
+                    └───────────────┼───────────────┘
+                                    │
+               Single Unified Cross-Platform Frontend
+       (Job Seeker Portal · Employer Portal · Admin Dashboard)
+                                    │
+                                    ▼
+                             NestJS + Fastify
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+            PostgreSQL (Neon)                    Redis
+                + Prisma                        + BullMQ
 ```
 
 ### Request Flow
 
-1. Mobile app or Admin dashboard sends request with `Authorization: Bearer <JWT>`
+1. Cross-platform frontend (Android, iOS, Web) sends requests with `Authorization: Bearer <JWT>`
 2. NestJS `AuthGuard` verifies token, extracts `userId` or `adminId` + `role`
 3. `AgencyGuard` resolves `agency_id` from the JWT payload
 4. Controller delegates to service layer which uses Prisma Client for database operations
@@ -111,39 +93,36 @@ The agency is always the middle point. No direct contact between employers and c
 
 ## 3. Tech Stack & Versions
 
-### Mobile (React Native + Expo)
+### Cross-Platform Frontend (React Native + Expo for Android, iOS, Web)
 
 | Package | Version | Purpose |
 |---|---|---|
-| `expo` | ~54.x | Managed workflow platform |
+| `expo` | ~54.x | Managed workflow platform targeting Android, iOS, and Web |
 | `react-native` | 0.79.x | Core framework |
-| `expo-router` | ~4.x | File-based routing (replaces React Navigation stacks) |
+| `expo-router` | ~4.x | File-based cross-platform routing |
 | `@react-navigation/bottom-tabs` | 7.x | Tab navigator |
 | `@tanstack/react-query` | 5.x | Server state management (caching, refetching, mutations) |
-| `zustand` | 5.x | Client state management (auth, UI state) |
+| `zustand` | 5.x | Client state management (auth, mode, UI state) |
 | `react-hook-form` | 7.x | Form management |
 | `zod` | 3.x | Schema validation |
 | `@hookform/resolvers` | 3.x | Zod resolver for React Hook Form |
 | `axios` | 1.x | HTTP client (used by TanStack Query) |
+| `nativewind` | 4.x | Utility-first Tailwind CSS styling for React Native & Web |
 | `expo-secure-store` | ~14.x | Secure token storage |
 | `expo-notifications` | ~0.29.x | Expo Push Notifications |
 | `expo-image-picker` | ~16.x | Photo/video capture and selection |
 | `expo-document-picker` | ~13.x | Document upload |
 | `expo-video` | ~2.x | Candidate intro video playback |
 | `expo-linking` | ~7.x | WhatsApp/Telegram/IMO deep links |
-| `@shopify/flash-list` | 1.x | High-performance candidate/vacancy lists |
-| `expo-image` | ~2.x | Cached image display (replaces FastImage) |
-| `react-native-reanimated` | ~3.x | Animations |
-| `react-native-gesture-handler` | ~2.x | Gesture handling |
-| `lucide-react-native` | 0.x | Icon library |
-| `react-native-svg` | ~15.x | SVG rendering |
+| `expo-image` | ~2.x | Cached image display |
+| `lucide-react-native` | 0.x | Cross-platform icon library |
 
 ### Backend (NestJS + Fastify)
 
 | Package | Version | Purpose |
 |---|---|---|
 | `@nestjs/core` | 11.x | NestJS framework core |
-| `@nestjs/platform-fastify` | 11.x | Fastify HTTP adapter (replaces Express) |
+| `@nestjs/platform-fastify` | 11.x | Fastify HTTP adapter (high performance) |
 | `@nestjs/swagger` | 8.x | OpenAPI / Swagger documentation |
 | `@nestjs/config` | 4.x | Environment configuration |
 | `@nestjs/jwt` | 11.x | JWT creation and verification |
@@ -155,14 +134,10 @@ The agency is always the middle point. No direct contact between employers and c
 | `cloudinary` | 2.x | Cloudinary SDK for image/video uploads |
 | `expo-server-sdk` | 3.x | Expo Push Notification dispatch |
 | `bcryptjs` | 2.x | Password hashing |
-| `class-validator` | 0.14.x | DTO validation (replaces express-validator) |
-| `class-transformer` | 0.5.x | DTO transformation |
+| `class-validator` | 0.14.x | DTO validation |
 | `ioredis` | 5.x | Redis client |
 | `bullmq` | 5.x | Job queue (vacancy expiry, OTP cleanup, analytics sync) |
 | `@sentry/nestjs` | 9.x | Error tracking |
-| `helmet` | 8.x | HTTP security headers via Fastify plugin |
-| `zod` | 3.x | Runtime schema validation |
-| `nodemailer` | 6.x | Email sending (optional) |
 
 ### Media (Cloudinary)
 
@@ -172,26 +147,7 @@ The agency is always the middle point. No direct contact between employers and c
 | **Images** | Candidate photos, agency logos, user profile photos |
 | **Videos** | Candidate introduction videos (with auto-thumbnail) |
 | **Documents** | Passports, medical certs, contracts (PDF) |
-| **Transformations** | Auto-resize, face-crop thumbnails, video transcoding |
-| **CDN** | Built-in Cloudinary CDN (global edge delivery) |
-
-### Admin Dashboard (Next.js)
-
-| Package | Version | Purpose |
-|---|---|---|
-| `next` | 15.x | React meta-framework (SSR + file-based routing) |
-| `react` | 19.x | UI library |
-| `typescript` | 5.x | Type safety |
-| `tailwindcss` | 4.x | Utility-first CSS |
-| `shadcn/ui` | latest | Accessible, composable UI components |
-| `@tanstack/react-query` | 5.x | Server state management |
-| `react-hook-form` | 7.x | Form management |
-| `zod` | 3.x | Schema validation |
-| `@hookform/resolvers` | 3.x | Zod resolver |
-| `axios` | 1.x | HTTP client |
-| `lucide-react` | 0.x | Icon library |
-| `recharts` | 2.x | Dashboard charts and analytics |
-| `@tanstack/react-table` | 8.x | Data tables |
+| **CDN** | Built-in Cloudinary CDN |
 
 ### Infrastructure
 
