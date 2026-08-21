@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Bell, CheckCircle2, AlertCircle, FileText, Send } from 'lucide-react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { CheckCircle2, FileText, Send } from 'lucide-react-native';
 
 export default function NotificationsScreen() {
     const notifications = [
@@ -32,33 +32,33 @@ export default function NotificationsScreen() {
 
     return (
         <View className="flex-1 bg-slate-50">
-            <View className="px-4 pt-12 pb-4 bg-white border-b border-slate-200">
-                <Text className="text-xl font-bold text-slate-900">Notifications</Text>
+            <View className="px-5 pt-14 pb-4 bg-white border-b border-slate-200">
+                <Text className="text-xl font-extrabold text-slate-900">Notifications</Text>
             </View>
 
-            <ScrollView className="flex-1 p-4">
+            <ScrollView className="flex-1 p-5">
                 {notifications.map((n) => (
                     <View
                         key={n.id}
-                        className={`p-4 rounded-xl mb-3 border ${n.isRead ? 'bg-white border-slate-200' : 'bg-emerald-50/60 border-emerald-200'
-                            } flex-row items-start`}
+                        className={`p-4 rounded-2xl mb-3 border ${n.isRead ? 'bg-white border-slate-200' : 'bg-emerald-50 border border-emerald-200'
+                            } flex-row items-start shadow-xs`}
                     >
-                        <View className="p-2.5 rounded-full bg-emerald-100 mr-3 mt-0.5">
+                        <View className="p-2.5 rounded-xl bg-emerald-100 mr-3 mt-0.5 border border-emerald-200">
                             {n.type === 'medical' ? (
-                                <CheckCircle2 size={18} color="#10B981" />
+                                <CheckCircle2 size={18} color="#059669" />
                             ) : n.type === 'application' ? (
-                                <FileText size={18} color="#3B82F6" />
+                                <FileText size={18} color="#1E3A8A" />
                             ) : (
-                                <Send size={18} color="#8B5CF6" />
+                                <Send size={18} color="#2563EB" />
                             )}
                         </View>
 
                         <View className="flex-1">
                             <View className="flex-row items-center justify-between mb-1">
                                 <Text className="text-sm font-bold text-slate-900 flex-1 mr-2">{n.title}</Text>
-                                <Text className="text-xs text-slate-400 font-medium">{n.time}</Text>
+                                <Text className="text-xs text-slate-500 font-medium">{n.time}</Text>
                             </View>
-                            <Text className="text-xs text-slate-600 leading-relaxed">{n.body}</Text>
+                            <Text className="text-xs text-slate-700 leading-relaxed font-medium">{n.body}</Text>
                         </View>
                     </View>
                 ))}
