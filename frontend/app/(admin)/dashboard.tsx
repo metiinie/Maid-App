@@ -8,20 +8,18 @@ import {
     TextInput,
     Modal,
     Alert,
-    Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
     ShieldCheck,
-    Users,
-    Briefcase,
-    GitPullRequest,
-    CreditCard,
     Plus,
-    CheckCircle,
     ArrowLeft,
     X,
     LogOut,
+    GitPullRequest,
+    Users,
+    Briefcase,
+    CreditCard,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { candidateService } from '../../services/candidateService';
@@ -121,9 +119,9 @@ export default function AdminDashboard() {
     return (
         <View className="flex-1 bg-slate-50">
             {/* Navigation Header */}
-            <View className="bg-slate-900 px-5 pt-14 pb-4 flex-row items-center justify-between shadow-md">
+            <View className="bg-blue-900 px-5 pt-14 pb-4 flex-row items-center justify-between shadow-md">
                 <View className="flex-row items-center gap-3">
-                    <Pressable onPress={() => router.back()} className="p-1">
+                    <Pressable onPress={() => router.back()} className="p-1 rounded-full bg-blue-800">
                         <ArrowLeft size={20} color="#FFFFFF" />
                     </Pressable>
                     <View className="w-8 h-8 rounded-lg bg-emerald-500 items-center justify-center">
@@ -131,7 +129,7 @@ export default function AdminDashboard() {
                     </View>
                     <View>
                         <Text className="text-white text-base font-bold">Admin Portal</Text>
-                        <Text className="text-emerald-400 text-[10px]">
+                        <Text className="text-emerald-300 text-[10px] font-semibold">
                             {admin?.agency_name || 'Addis Recruitment Agency'}
                         </Text>
                     </View>
@@ -142,35 +140,54 @@ export default function AdminDashboard() {
                         await logoutAdmin();
                         router.replace('/');
                     }}
-                    className="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg flex-row items-center gap-1.5"
+                    className="bg-blue-950 border border-blue-800 px-3 py-1.5 rounded-lg flex-row items-center gap-1.5"
                 >
                     <LogOut size={12} color="#94A3B8" />
-                    <Text className="text-slate-300 text-[11px] font-medium">Sign Out</Text>
+                    <Text className="text-white text-[11px] font-bold">Sign Out</Text>
+                </Pressable>
+            </View>
+
+            {/* Quick Action Bar for Pipeline */}
+            <View className="px-5 pt-3">
+                <Pressable
+                    onPress={() => router.push('/(admin)/pipeline')}
+                    className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex-row items-center justify-between active:opacity-90 shadow-xs"
+                >
+                    <View className="flex-row items-center gap-2">
+                        <GitPullRequest size={18} color="#1E3A8A" />
+                        <View>
+                            <Text className="text-blue-950 text-xs font-extrabold">Open 5-Stage Kanban Board</Text>
+                            <Text className="text-blue-700 text-[10px]">Track candidate clearance & visa advancement</Text>
+                        </View>
+                    </View>
+                    <View className="bg-blue-900 px-2.5 py-1 rounded-lg">
+                        <Text className="text-white text-[10px] font-extrabold">Open Pipeline →</Text>
+                    </View>
                 </Pressable>
             </View>
 
             {/* Stats Row */}
-            <View className="px-5 pt-4 flex-row gap-3">
+            <View className="px-5 pt-3 flex-row gap-3">
                 {[
-                    { v: candidates.length, l: 'Candidates', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                    { v: vacancies.length, l: 'Vacancies', color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { v: pipelines.length, l: 'Pipelines', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { v: candidates.length, l: 'Candidates', color: 'text-emerald-700', bg: 'bg-emerald-50' },
+                    { v: vacancies.length, l: 'Vacancies', color: 'text-blue-900', bg: 'bg-blue-50' },
+                    { v: pipelines.length, l: 'Pipelines', color: 'text-emerald-700', bg: 'bg-emerald-50' },
                 ].map((s) => (
                     <View
                         key={s.l}
-                        className="flex-1 bg-white border border-slate-200 p-3.5 rounded-xl items-center shadow-sm"
+                        className="flex-1 bg-white border border-slate-200 p-3 rounded-xl items-center shadow-xs"
                     >
-                        <Text className={`text-xl font-bold ${s.color}`}>{s.v}</Text>
-                        <Text className="text-slate-500 text-[10px] font-medium">{s.l}</Text>
+                        <Text className={`text-xl font-extrabold ${s.color}`}>{s.v}</Text>
+                        <Text className="text-slate-600 text-[10px] font-bold">{s.l}</Text>
                     </View>
                 ))}
             </View>
 
-            {/* Cross-Platform Segmented Tab Bar */}
+            {/* Segmented Tab Bar */}
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                className="px-5 my-4"
+                className="px-5 my-3"
                 contentContainerStyle={{ gap: 8 }}
             >
                 {tabs.map((tab) => {
@@ -179,13 +196,13 @@ export default function AdminDashboard() {
                         <Pressable
                             key={tab.key}
                             onPress={() => setActiveTab(tab.key)}
-                            className={`px-4 py-2.5 rounded-lg border ${isActive
-                                    ? 'bg-emerald-500 border-emerald-500'
+                            className={`px-4 py-2 rounded-xl border ${isActive
+                                    ? 'bg-emerald-600 border-emerald-600'
                                     : 'bg-white border-slate-200'
                                 }`}
                         >
                             <Text
-                                className={`text-xs font-semibold ${isActive ? 'text-white' : 'text-slate-700'
+                                className={`text-xs font-extrabold ${isActive ? 'text-white' : 'text-slate-800'
                                     }`}
                             >
                                 {tab.label}
@@ -197,48 +214,48 @@ export default function AdminDashboard() {
 
             {/* Main Content Area */}
             {loading ? (
-                <ActivityIndicator color="#10B981" size="large" className="mt-10" />
+                <ActivityIndicator color="#059669" size="large" className="mt-10" />
             ) : (
                 <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
                     {activeTab === 'candidates' && (
                         <View>
                             <Pressable
                                 onPress={() => setAddCandModal(true)}
-                                className="bg-emerald-500 py-3.5 rounded-xl items-center flex-row justify-center gap-2 mb-4 shadow-sm"
+                                className="bg-emerald-600 py-3 rounded-xl items-center flex-row justify-center gap-2 mb-4 shadow-xs active:opacity-90"
                             >
                                 <Plus size={16} color="#FFFFFF" />
-                                <Text className="text-white text-xs font-bold">Add New Candidate</Text>
+                                <Text className="text-white text-xs font-extrabold">Add New Candidate</Text>
                             </Pressable>
 
                             {candidates.map((c: any) => (
                                 <View
                                     key={c.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-sm"
+                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-xs"
                                 >
                                     <View className="flex-row items-center justify-between">
                                         <Text className="text-slate-900 text-sm font-bold">
                                             {c.first_name} {c.last_name}
                                         </Text>
                                         <View
-                                            className={`px-2 py-0.5 rounded-full ${c.medical_status === 'cleared'
-                                                    ? 'bg-emerald-50 border border-emerald-200'
-                                                    : 'bg-slate-100'
+                                            className={`px-2.5 py-0.5 rounded-full ${c.medical_status === 'cleared'
+                                                    ? 'bg-emerald-100 border border-emerald-200'
+                                                    : 'bg-slate-100 border border-slate-200'
                                                 }`}
                                         >
                                             <Text
-                                                className={`text-[9px] font-bold ${c.medical_status === 'cleared'
-                                                        ? 'text-emerald-700'
-                                                        : 'text-slate-600'
+                                                className={`text-[10px] font-bold ${c.medical_status === 'cleared'
+                                                        ? 'text-emerald-800'
+                                                        : 'text-slate-700'
                                                     }`}
                                             >
                                                 {c.medical_status}
                                             </Text>
                                         </View>
                                     </View>
-                                    <Text className="text-blue-600 text-[11px] font-medium mt-1">
+                                    <Text className="text-blue-900 text-xs font-semibold mt-1">
                                         {c.category_name || 'Domestic Worker'}
                                     </Text>
-                                    <Text className="text-slate-500 text-[10px] mt-1">
+                                    <Text className="text-slate-500 text-[11px] mt-1 font-medium">
                                         Passport: {c.passport_number || 'Pending'}
                                     </Text>
                                 </View>
@@ -251,13 +268,13 @@ export default function AdminDashboard() {
                             {vacancies.map((v: any) => (
                                 <View
                                     key={v.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-sm"
+                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-xs"
                                 >
                                     <Text className="text-slate-900 text-sm font-bold">{v.title}</Text>
-                                    <Text className="text-emerald-600 text-[11px] font-semibold mt-1">
+                                    <Text className="text-emerald-700 text-xs font-bold mt-1">
                                         {v.target_country} • ${v.salary_monthly} USD/mo
                                     </Text>
-                                    <Text className="text-slate-500 text-[10px] mt-1">
+                                    <Text className="text-slate-500 text-[11px] mt-1 font-medium">
                                         Applications: {v.applications_count || 0}
                                     </Text>
                                 </View>
@@ -270,14 +287,14 @@ export default function AdminDashboard() {
                             {pipelines.map((p: any) => (
                                 <View
                                     key={p.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-sm"
+                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-xs"
                                 >
                                     <Text className="text-slate-900 text-sm font-bold">
                                         {p.candidate_name || 'Candidate Profile'}
                                     </Text>
-                                    <Text className="text-slate-600 text-[11px] mt-1">
+                                    <Text className="text-slate-700 text-xs mt-1">
                                         Employer: {p.employer_name} • Stage:{' '}
-                                        <Text className="text-blue-600 font-bold">
+                                        <Text className="text-blue-900 font-bold">
                                             {p.current_stage?.replace('_', ' ')}
                                         </Text>
                                     </Text>
@@ -287,9 +304,9 @@ export default function AdminDashboard() {
                                             <Pressable
                                                 key={s.to}
                                                 onPress={() => advanceStage(p.id, s.to)}
-                                                className="mt-3 bg-blue-500 py-2.5 rounded-lg items-center"
+                                                className="mt-3 bg-blue-900 py-2.5 rounded-lg items-center active:opacity-90"
                                             >
-                                                <Text className="text-white text-[11px] font-bold">
+                                                <Text className="text-white text-xs font-bold">
                                                     Advance → {s.label}
                                                 </Text>
                                             </Pressable>
@@ -307,9 +324,9 @@ export default function AdminDashboard() {
                             {plans.map((plan: any) => (
                                 <View
                                     key={plan.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-5 mb-4 shadow-sm"
+                                    className="bg-white border border-slate-200 rounded-xl p-5 mb-4 shadow-xs"
                                 >
-                                    <Text className="text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
+                                    <Text className="text-emerald-700 text-xs font-extrabold uppercase tracking-wider">
                                         {plan.code}
                                     </Text>
                                     <Text className="text-slate-900 text-base font-bold mt-1">
@@ -321,7 +338,7 @@ export default function AdminDashboard() {
                                     </Text>
                                     <Pressable
                                         onPress={() => checkout(plan.id)}
-                                        className="mt-4 bg-emerald-500 py-3 rounded-lg items-center"
+                                        className="mt-4 bg-emerald-600 py-3 rounded-lg items-center active:opacity-90"
                                     >
                                         <Text className="text-white text-xs font-bold">Checkout with Chapa</Text>
                                     </Pressable>
@@ -367,7 +384,7 @@ export default function AdminDashboard() {
                             />
                             <Pressable
                                 onPress={addCandidate}
-                                className="bg-emerald-500 py-3 rounded-lg items-center mt-2"
+                                className="bg-emerald-600 py-3 rounded-lg items-center mt-2 active:opacity-90"
                             >
                                 <Text className="text-white text-xs font-bold">Save Candidate</Text>
                             </Pressable>

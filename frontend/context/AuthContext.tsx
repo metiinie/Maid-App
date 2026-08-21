@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import { useRouter, useSegments } from 'expo-router';
+import { storage } from '../services/storage';
 import { authService } from '../services/authService';
 
 type AuthContextType = {
@@ -26,15 +26,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function loadStoredAuth() {
         try {
-            const userToken = await SecureStore.getItemAsync('ethio_user_token');
-            const adminToken = await SecureStore.getItemAsync('ethio_admin_token');
+            const userToken = await storage.getItem('ethio_user_token');
+            const adminToken = await storage.getItem('ethio_admin_token');
 
             if (userToken) {
                 try {
                     const res = await authService.getUserProfile();
                     setUser((res as any).data);
                 } catch {
-                    await SecureStore.deleteItemAsync('ethio_user_token');
+                    await storage.deleteItem('ethio_user_token');
                 }
             }
 
@@ -43,11 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const res = await authService.getAdminProfile();
                     setAdmin((res as any).data);
                 } catch {
-                    await SecureStore.deleteItemAsync('ethio_admin_token');
+                    await storage.deleteItem('ethio_admin_token');
                 }
             }
         } catch (err) {
-            console.error('Failed to load auth from SecureStore:', err);
+            console.error('Failed to load auth from storage:', err);
         } finally {
             setLoading(false);
         }
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loginUser = async (phone: string, password: string) => {
         const res: any = await authService.loginUser(phone, password);
         const { token, user: userData } = res.data;
-        await SecureStore.setItemAsync('ethio_user_token', token);
+        await storage.setItem('ethio_user_token', token);
         setUser(userData);
         return userData;
     };
@@ -64,18 +64,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loginAdmin = async (email: string, password: string) => {
         const res: any = await authService.loginAdmin(email, password);
         const { token, admin: adminData } = res.data;
-        await SecureStore.setItemAsync('ethio_admin_token', token);
+        await storage.setItem('ethio_admin_token', token);
         setAdmin(adminData);
         return adminData;
     };
 
     const logoutUser = async () => {
-        await SecureStore.deleteItemAsync('ethio_user_token');
+        await storage.deleteItem('ethio_user_token');
         setUser(null);
     };
 
     const logoutAdmin = async () => {
-        await SecureStore.deleteItemAsync('ethio_admin_token');
+        await storage.deleteItem('ethio_admin_token');
         setAdmin(null);
     };
 

@@ -9,32 +9,35 @@ export class CandidatesService {
         private mediaService: MediaService,
     ) { }
 
-    async findAll(query: { category?: string; status?: string; search?: string }) {
-        const where: any = { isDeleted: false };
+    async findAll(query: { categoryId?: string; status?: string; search?: string }) {
+        const where: any = {};
         if (query.status) where.status = query.status;
+        if (query.categoryId) where.categoryId = query.categoryId;
         if (query.search) {
             where.OR = [
                 { firstName: { contains: query.search, mode: 'insensitive' } },
                 { lastName: { contains: query.search, mode: 'insensitive' } },
             ];
         }
-        return this.prisma.candidateProfile.findMany({
+        return this.prisma.candidate.findMany({
             where,
+            include: { category: true, agency: { select: { id: true, name: true, logoUrl: true } } },
             orderBy: { createdAt: 'desc' },
             take: 50,
         });
     }
 
     async findOne(id: string) {
-        const candidate = await this.prisma.candidateProfile.findUnique({
+        const candidate = await this.prisma.candidate.findUnique({
             where: { id },
             include: {
                 documents: true,
-                agency: true,
+                agency: { include: { contactChannels: true } },
+                category: true,
             },
         });
 
-        if (!candidate || candidate.isDeleted) {
+        if (!candidate) {
             throw new NotFoundException(`Candidate #${id} not found`);
         }
 
@@ -42,10 +45,28 @@ export class CandidatesService {
     }
 
     async create(agencyId: string, data: any) {
-        return this.prisma.candidateProfile.create({
+        return this.prisma.candidate.create({
             data: {
-                ...data,
                 agencyId,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                gender: data.gender || 'female',
+                dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+                nationality: data.nationality || 'Ethiopian',
+                religion: data.religion || 'Orthodox',
+                maritalStatus: data.maritalStatus || 'Single',
+                currentCountry: data.currentCountry || 'Ethiopia',
+                city: data.city || 'Addis Ababa',
+                educationLevel: data.educationLevel,
+                yearsOfExperience: Number(data.yearsOfExperience || 0),
+                medicalStatus: data.medicalStatus || 'pending',
+                medicalClearanceDate: data.medicalClearanceDate ? new Date(data.medicalClearanceDate) : null,
+                photoUrl: data.photoUrl,
+                videoUrl: data.videoUrl,
+                summary: data.summary,
+                skills: data.skills || [],
+                languages: data.languages || [],
+                categoryId: data.categoryId,
             },
         });
     }

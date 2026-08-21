@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Linking, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Linking, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Heart, Phone, MessageSquare, ShieldCheck, CheckCircle2, MapPin, Award, Calendar, UserCheck } from 'lucide-react-native';
+import { ArrowLeft, Heart, Phone, MessageSquare, ShieldCheck, CheckCircle2, UserCheck } from 'lucide-react-native';
 
 export default function CandidateDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const [isSaved, setIsSaved] = useState(false);
-    const [inquiryModalVisible, setInquiryModalVisible] = useState(false);
 
     // Mocked candidate data structure matching production schema
     const candidate = {
@@ -43,11 +42,6 @@ export default function CandidateDetailScreen() {
         Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open WhatsApp'));
     };
 
-    const handleOpenTelegram = () => {
-        const url = `https://t.me/${candidate.agency.telegram}`;
-        Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open Telegram'));
-    };
-
     const handleCallPhone = () => {
         Linking.openURL(`tel:${candidate.agency.phone}`);
     };
@@ -67,14 +61,14 @@ export default function CandidateDetailScreen() {
 
             <ScrollView className="flex-1">
                 {/* Candidate Banner & Photo */}
-                <View className="relative bg-slate-900 h-72">
+                <View className="relative bg-blue-900 h-72">
                     <Image source={{ uri: candidate.photoUrl }} className="w-full h-full opacity-90" resizeMode="cover" />
                     <View className="absolute bottom-4 left-4 right-4 flex-row justify-between items-end">
                         <View>
                             <Text className="text-2xl font-bold text-white">{candidate.firstName} {candidate.lastName}</Text>
                             <Text className="text-emerald-400 font-semibold">{candidate.nationality} · {candidate.gender}</Text>
                         </View>
-                        <View className="bg-emerald-500/90 px-3 py-1.5 rounded-full flex-row items-center">
+                        <View className="bg-emerald-600 px-3 py-1.5 rounded-full flex-row items-center">
                             <ShieldCheck size={16} color="#FFFFFF" className="mr-1" />
                             <Text className="text-white text-xs font-bold uppercase">Medical Cleared</Text>
                         </View>
@@ -82,9 +76,9 @@ export default function CandidateDetailScreen() {
                 </View>
 
                 {/* Agency Info Header */}
-                <View className="bg-emerald-50 p-4 border-b border-emerald-100 flex-row items-center justify-between">
+                <View className="bg-emerald-50 p-4 border-b border-emerald-200 flex-row items-center justify-between">
                     <View className="flex-row items-center flex-1">
-                        <UserCheck size={20} color="#10B981" />
+                        <UserCheck size={20} color="#059669" />
                         <Text className="ml-2 font-bold text-slate-800 text-sm">{candidate.agency.name}</Text>
                     </View>
                     <Text className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-bold">Verified Agency</Text>
@@ -93,7 +87,7 @@ export default function CandidateDetailScreen() {
                 {/* Profile Overview */}
                 <View className="p-4 space-y-4">
                     {/* Quick Stats Grid */}
-                    <View className="flex-row flex-wrap justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <View className="flex-row flex-wrap justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
                         <View className="w-1/2 mb-3">
                             <Text className="text-xs text-slate-400 font-medium">Experience</Text>
                             <Text className="text-base font-bold text-slate-800">{candidate.yearsOfExperience} Years</Text>
@@ -123,8 +117,8 @@ export default function CandidateDetailScreen() {
                         <Text className="text-sm font-bold text-slate-900 mb-3">Skills & Capabilities</Text>
                         <View className="flex-row flex-wrap gap-2">
                             {candidate.skills.map((skill, index) => (
-                                <View key={index} className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 flex-row items-center">
-                                    <CheckCircle2 size={14} color="#10B981" />
+                                <View key={index} className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex-row items-center">
+                                    <CheckCircle2 size={14} color="#059669" />
                                     <Text className="text-xs font-semibold text-emerald-800 ml-1.5">{skill}</Text>
                                 </View>
                             ))}
@@ -136,8 +130,8 @@ export default function CandidateDetailScreen() {
                         <Text className="text-sm font-bold text-slate-900 mb-2">Languages Spoken</Text>
                         <View className="flex-row flex-wrap gap-2">
                             {candidate.languages.map((lang, index) => (
-                                <View key={index} className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
-                                    <Text className="text-xs font-semibold text-blue-800">{lang}</Text>
+                                <View key={index} className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+                                    <Text className="text-xs font-semibold text-blue-900">{lang}</Text>
                                 </View>
                             ))}
                         </View>
@@ -146,12 +140,12 @@ export default function CandidateDetailScreen() {
             </ScrollView>
 
             {/* Action CTA Bar */}
-            <View className="p-4 bg-white border-t border-slate-200 flex-row items-center space-x-3">
-                <TouchableOpacity onPress={handleOpenWhatsApp} className="flex-1 bg-emerald-500 py-3.5 rounded-xl flex-row justify-center items-center">
+            <View className="p-4 bg-white border-t border-slate-200 flex-row items-center gap-3">
+                <TouchableOpacity onPress={handleOpenWhatsApp} className="flex-1 bg-emerald-600 py-3.5 rounded-xl flex-row justify-center items-center active:opacity-90">
                     <MessageSquare size={18} color="#FFFFFF" />
                     <Text className="text-white font-bold text-sm ml-2">WhatsApp Agency</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleCallPhone} className="bg-slate-900 px-4 py-3.5 rounded-xl flex-row items-center">
+                <TouchableOpacity onPress={handleCallPhone} className="bg-blue-900 px-4 py-3.5 rounded-xl flex-row items-center active:opacity-90">
                     <Phone size={18} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>

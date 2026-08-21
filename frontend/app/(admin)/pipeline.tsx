@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Modal, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, User, MapPin, ArrowRight, ShieldCheck, ChevronRight, FileText, CheckCircle2, Clock } from 'lucide-react-native';
+import { ArrowLeft, User, MapPin, ArrowRight, Clock } from 'lucide-react-native';
 
 export default function AdminPipelineScreen() {
     const router = useRouter();
@@ -72,7 +72,7 @@ export default function AdminPipelineScreen() {
                             key={s.key}
                             onPress={() => setSelectedStage(s.key)}
                             className={`px-3.5 py-2 rounded-xl mr-2 flex-row items-center border ${selectedStage === s.key
-                                    ? 'bg-emerald-500 border-emerald-500'
+                                    ? 'bg-emerald-600 border-emerald-600'
                                     : 'bg-slate-100 border-slate-200'
                                 }`}
                         >
@@ -101,7 +101,7 @@ export default function AdminPipelineScreen() {
             {/* Pipeline Candidate List */}
             <ScrollView className="flex-1 p-4">
                 {filtered.length === 0 ? (
-                    <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-4">
+                    <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-4 shadow-xs">
                         <Clock size={36} color="#94A3B8" />
                         <Text className="text-sm font-bold text-slate-700 mt-2">No Candidates in this Stage</Text>
                         <Text className="text-xs text-slate-400 text-center mt-1">
@@ -119,8 +119,8 @@ export default function AdminPipelineScreen() {
                                         <Text className="text-xs text-slate-500">Ref #{item.id}</Text>
                                     </View>
                                 </View>
-                                <View className="bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                                    <Text className="text-xs font-bold text-amber-800">{item.enteredStageDays}d in stage</Text>
+                                <View className="bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+                                    <Text className="text-xs font-bold text-blue-900">{item.enteredStageDays}d in stage</Text>
                                 </View>
                             </View>
 
@@ -130,14 +130,14 @@ export default function AdminPipelineScreen() {
                                     <Text className="text-xs text-slate-600 ml-1.5 font-medium">Employer: {item.employerName}</Text>
                                 </View>
                                 <View className="flex-row items-center mt-1">
-                                    <MapPin size={14} color="#10B981" />
-                                    <Text className="text-xs text-emerald-600 ml-1.5 font-bold">{item.employerCountry} ({item.employerCity})</Text>
+                                    <MapPin size={14} color="#059669" />
+                                    <Text className="text-xs text-emerald-700 ml-1.5 font-bold">{item.employerCountry} ({item.employerCity})</Text>
                                 </View>
                             </View>
 
                             <TouchableOpacity
                                 onPress={() => handleAdvanceStage(item.id)}
-                                className="bg-emerald-500 py-2.5 rounded-xl flex-row items-center justify-center mt-1"
+                                className="bg-emerald-600 py-2.5 rounded-xl flex-row items-center justify-center mt-1 active:opacity-90"
                             >
                                 <Text className="text-white text-xs font-bold mr-1.5">Advance Stage</Text>
                                 <ArrowRight size={14} color="#FFFFFF" />

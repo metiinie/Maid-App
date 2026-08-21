@@ -1,9 +1,11 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import { storage } from './storage';
 
-// IMPORTANT: Change this to your computer's local IP address when testing
-// e.g., 'http://192.168.1.100:5000/api'
-const API_BASE_URL = 'http://192.168.8.48:5000/api';
+// Base URL dynamically configured for local dev (port 3000)
+const API_BASE_URL = Platform.OS === 'web'
+    ? 'http://localhost:3000/api/v1'
+    : 'http://192.168.8.48:3000/api/v1';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -13,12 +15,12 @@ const api = axios.create({
     timeout: 15000,
 });
 
-// Request Interceptor: Attach JWT Token from SecureStore
+// Request Interceptor: Attach JWT Token from storage
 api.interceptors.request.use(
     async (config) => {
         try {
-            const adminToken = await SecureStore.getItemAsync('ethio_admin_token');
-            const userToken = await SecureStore.getItemAsync('ethio_user_token');
+            const adminToken = await storage.getItem('ethio_admin_token');
+            const userToken = await storage.getItem('ethio_user_token');
 
             if (adminToken && config.url?.includes('/admin')) {
                 config.headers.Authorization = `Bearer ${adminToken}`;
@@ -28,12 +30,12 @@ api.interceptors.request.use(
                 config.headers.Authorization = `Bearer ${adminToken}`;
             }
         } catch (err) {
-            // SecureStore may not be available in some environments
+            // Storage safe fallback
         }
 
         return config;
     },
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
 );
 
 // Response Interceptor: Format error messages
@@ -45,7 +47,7 @@ api.interceptors.response.use(
             error.message ||
             'An unexpected error occurred';
         return Promise.reject(new Error(message));
-    }
+    },
 );
 
 export default api;

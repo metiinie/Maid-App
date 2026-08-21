@@ -49,76 +49,77 @@ export default function CandidatesScreen() {
     }
 
     return (
-        <View className="flex-1 bg-ethiopia-navy">
+        <View className="flex-1 bg-slate-50">
             {/* Header */}
-            <View className="px-5 pt-14 pb-4">
-                <Text className="text-white text-xl font-extrabold">Candidate Directory</Text>
-                <Text className="text-slate-400 text-[11px] mt-0.5">
+            <View className="px-5 pt-14 pb-4 bg-white border-b border-slate-200">
+                <Text className="text-slate-900 text-xl font-extrabold">Candidate Directory</Text>
+                <Text className="text-slate-600 text-xs mt-0.5 font-medium">
                     Browse verified Ethiopian manpower profiles
                 </Text>
             </View>
 
             {/* Search Bar */}
-            <View className="px-5 mb-4">
-                <View className="flex-row items-center bg-slate-900 border border-slate-800 rounded-2xl px-4 py-1">
+            <View className="px-5 my-4">
+                <View className="flex-row items-center bg-white border border-slate-200 rounded-2xl px-4 py-1 shadow-xs">
                     <Search size={16} color="#64748B" />
                     <TextInput
                         value={search}
                         onChangeText={setSearch}
                         onSubmitEditing={fetchCandidates}
                         placeholder="Search by name, skill..."
-                        placeholderTextColor="#64748B"
-                        className="flex-1 text-white text-xs ml-2.5 py-3"
+                        placeholderTextColor="#94A3B8"
+                        className="flex-1 text-slate-900 text-xs ml-2.5 py-3 font-medium"
                         returnKeyType="search"
                     />
-                    <Pressable onPress={fetchCandidates} className="ml-2 p-1.5 bg-ethiopia-gold rounded-lg">
-                        <Filter size={14} color="#0A192F" />
+                    <Pressable onPress={fetchCandidates} className="ml-2 p-2 bg-emerald-600 rounded-xl">
+                        <Filter size={14} color="#FFFFFF" />
                     </Pressable>
                 </View>
             </View>
 
             {/* Candidate List */}
             {loading ? (
-                <ActivityIndicator color="#D4AF37" size="large" className="mt-10" />
+                <ActivityIndicator color="#059669" size="large" className="mt-10" />
             ) : (
-                <ScrollView className="px-5" showsVerticalScrollIndicator={false}>
+                <ScrollView className="px-5 flex-1" showsVerticalScrollIndicator={false}>
                     {candidates.length === 0 ? (
-                        <View className="items-center py-16">
-                            <Users size={32} color="#475569" />
-                            <Text className="text-slate-400 text-xs mt-3">No candidates match your search</Text>
+                        <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-4 shadow-xs">
+                            <Users size={32} color="#94A3B8" />
+                            <Text className="text-slate-900 text-sm font-bold mt-3">No candidates match your search</Text>
+                            <Text className="text-slate-500 text-xs text-center mt-1">Try adjusting your search criteria or clear the search bar.</Text>
                         </View>
                     ) : (
                         candidates.map((cand: any) => (
                             <Pressable
                                 key={cand.id}
                                 onPress={() => setSelectedCandidate(cand)}
-                                className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 mb-3 active:opacity-80"
+                                className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs active:opacity-90"
                             >
                                 <View className="flex-row items-center gap-3">
-                                    <View className="w-12 h-12 rounded-xl bg-ethiopia-gold/15 items-center justify-center">
-                                        <Text className="text-ethiopia-gold text-base font-bold">
+                                    <View className="w-12 h-12 rounded-xl bg-blue-100 items-center justify-center border border-blue-200">
+                                        <Text className="text-blue-900 text-base font-bold">
                                             {cand.first_name?.[0]}{cand.last_name?.[0]}
                                         </Text>
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-white text-sm font-bold">
+                                        <Text className="text-slate-900 text-sm font-bold">
                                             {cand.first_name} {cand.last_name}
                                         </Text>
-                                        <Text className="text-ethiopia-gold text-[11px] font-semibold mt-0.5">
+                                        <Text className="text-emerald-700 text-xs font-bold mt-0.5">
                                             {cand.category_name || 'Housemaid'}
                                         </Text>
                                         <View className="flex-row items-center gap-3 mt-1.5">
-                                            <Text className="text-slate-400 text-[10px]">Age: {cand.age || '24'}</Text>
-                                            <Text className="text-slate-400 text-[10px]">Exp: {cand.years_experience || '3'}yr</Text>
+                                            <Text className="text-slate-600 text-[11px] font-medium">Age: {cand.age || '24'}</Text>
+                                            <Text className="text-slate-600 text-[11px] font-medium">Exp: {cand.years_experience || '3'}yr</Text>
                                             <View className="flex-row items-center gap-0.5">
-                                                <MapPin size={9} color="#64748B" />
-                                                <Text className="text-slate-400 text-[10px]">{cand.nationality || 'Ethiopian'}</Text>
+                                                <MapPin size={10} color="#059669" />
+                                                <Text className="text-slate-600 text-[11px] font-medium">{cand.nationality || 'Ethiopian'}</Text>
                                             </View>
                                         </View>
                                     </View>
                                     {cand.is_featured && (
-                                        <View className="bg-ethiopia-gold/15 border border-ethiopia-gold/25 px-2 py-1 rounded-lg">
-                                            <Star size={12} color="#D4AF37" fill="#D4AF37" />
+                                        <View className="bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
+                                            <Star size={12} color="#059669" fill="#059669" />
                                         </View>
                                     )}
                                 </View>
@@ -131,27 +132,27 @@ export default function CandidatesScreen() {
 
             {/* Candidate Detail + Inquiry Modal */}
             <Modal visible={!!selectedCandidate} animationType="slide" transparent>
-                <View className="flex-1 bg-black/70 justify-end">
-                    <View className="bg-ethiopia-navy-light rounded-t-3xl border-t border-slate-800 p-5 max-h-[80%]">
+                <View className="flex-1 bg-black/60 justify-end">
+                    <View className="bg-white rounded-t-3xl border-t border-slate-200 p-5 max-h-[80%]">
                         <View className="flex-row items-center justify-between mb-4">
-                            <Text className="text-white text-lg font-extrabold">Candidate Profile</Text>
-                            <Pressable onPress={() => setSelectedCandidate(null)} className="p-1.5">
-                                <X size={20} color="#94A3B8" />
+                            <Text className="text-slate-900 text-lg font-extrabold">Candidate Profile</Text>
+                            <Pressable onPress={() => setSelectedCandidate(null)} className="p-1.5 bg-slate-100 rounded-full">
+                                <X size={20} color="#64748B" />
                             </Pressable>
                         </View>
 
                         {selectedCandidate && (
                             <ScrollView showsVerticalScrollIndicator={false}>
                                 <View className="items-center mb-4">
-                                    <View className="w-20 h-20 rounded-2xl bg-ethiopia-gold/15 items-center justify-center mb-3">
-                                        <Text className="text-ethiopia-gold text-2xl font-bold">
+                                    <View className="w-20 h-20 rounded-2xl bg-blue-100 border border-blue-200 items-center justify-center mb-3">
+                                        <Text className="text-blue-900 text-2xl font-bold">
                                             {selectedCandidate.first_name?.[0]}{selectedCandidate.last_name?.[0]}
                                         </Text>
                                     </View>
-                                    <Text className="text-white text-lg font-extrabold">
+                                    <Text className="text-slate-900 text-lg font-extrabold">
                                         {selectedCandidate.first_name} {selectedCandidate.last_name}
                                     </Text>
-                                    <Text className="text-ethiopia-gold text-xs font-bold mt-0.5">
+                                    <Text className="text-emerald-700 text-xs font-bold mt-0.5">
                                         {selectedCandidate.category_name || 'Housemaid'}
                                     </Text>
                                 </View>
@@ -166,32 +167,32 @@ export default function CandidatesScreen() {
                                         { label: 'Medical', value: selectedCandidate.medical_status || 'Cleared' },
                                         { label: 'Passport', value: selectedCandidate.passport_number || 'ET-XXXXX' },
                                     ].map((item) => (
-                                        <View key={item.label} className="flex-1 min-w-[45%] bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                                            <Text className="text-slate-400 text-[10px] font-semibold">{item.label}</Text>
-                                            <Text className="text-white text-xs font-bold mt-0.5">{item.value}</Text>
+                                        <View key={item.label} className="flex-1 min-w-[45%] bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                                            <Text className="text-slate-500 text-[10px] font-semibold">{item.label}</Text>
+                                            <Text className="text-slate-900 text-xs font-bold mt-0.5">{item.value}</Text>
                                         </View>
                                     ))}
                                 </View>
 
                                 {/* Inquiry Form */}
-                                <Text className="text-white text-sm font-bold mb-2">Send Inquiry</Text>
+                                <Text className="text-slate-900 text-sm font-bold mb-2">Send Inquiry</Text>
                                 <TextInput
                                     value={inquiryText}
                                     onChangeText={setInquiryText}
                                     placeholder="Write your inquiry message..."
-                                    placeholderTextColor="#64748B"
+                                    placeholderTextColor="#94A3B8"
                                     multiline
                                     numberOfLines={3}
-                                    className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-xs mb-3"
+                                    className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 text-xs mb-3"
                                     textAlignVertical="top"
                                 />
                                 <Pressable
                                     onPress={submitInquiry}
                                     disabled={submitting || !inquiryText.trim()}
-                                    className="bg-ethiopia-gold py-3.5 rounded-2xl items-center flex-row justify-center gap-2 active:opacity-80"
+                                    className="bg-emerald-600 py-3.5 rounded-xl items-center flex-row justify-center gap-2 active:opacity-90"
                                 >
-                                    <Send size={14} color="#0A192F" />
-                                    <Text className="text-ethiopia-navy text-xs font-extrabold">
+                                    <Send size={14} color="#FFFFFF" />
+                                    <Text className="text-white text-xs font-extrabold">
                                         {submitting ? 'Sending...' : 'Submit Inquiry'}
                                     </Text>
                                 </Pressable>

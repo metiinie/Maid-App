@@ -1,0 +1,3 @@
+﻿src/auth/auth.service.ts(37,17): error TS2353: Object literal may only specify known properties, and 'consumed' does not exist in type 'OtpVerificationWhereInput'.
+src/auth/auth.service.ts(49,21): error TS2353: Object literal may only specify known properties, and 'consumed' does not exist in type '(Without<OtpVerificationUpdateInput, OtpVerificationUncheckedUpdateInput> & OtpVerificationUncheckedUpdateInput) | (Without<...> & OtpVerificationUpdateInput)'.
+src/candidates/candidates.service.ts(60,17): error TS2353: Object literal may only specify known properties, and 'passportNumber' does not exist in type '(Without<CandidateCreateInput, CandidateUncheckedCreateInput> & CandidateUncheckedCreateInput) | (Without<...> & CandidateCreateInput)'.

@@ -1,0 +1,165 @@
+﻿node.exe : [96msrc/aut
+h/auth.service.ts[0m:
+[93m37[0m:[93m17[0m 
+- [91merror[0m[90m 
+TS2353: [0mObject 
+literal may only 
+specify known 
+properties, and 
+'consumed' does not 
+exist in type 'OtpVerif
+icationWhereInput'.
+At line:1 char:1
++ & "C:\laragon\bin\nod
+ejs\node-v22/node.exe" 
+"C:\laragon\bin\nodejs\
+no ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([96msrc/auth   
+ /a...ionWhereInput    
+'.:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+
+[7m37[0m             
+    consumed: false,
+[7m  [0m [91m       
+         ~~~~~~~~[0m
+
+  [96mnode_modules/.pr
+isma/client/index.d.ts
+[0m:[93m13556[0m:[93
+m5[0m
+    [7m13556[0m     
+where?: OtpVerification
+WhereInput
+    [7m     [0m 
+[96m    ~~~~~[0m
+    The expected type 
+comes from property 
+'where' which is 
+declared here on type 
+'{ select?: OtpVerifica
+tionSelect<DefaultArgs>
+; omit?: OtpVerificatio
+nOmit<DefaultArgs>; 
+where?: OtpVerification
+WhereInput; ... 4 more 
+...; distinct?: OtpVeri
+ficationScalarFieldEnum
+ | OtpVerificationScala
+rFieldEnum[]; }'
+[96msrc/auth/auth.serv
+ice.ts[0m:[93m49[0m:
+[93m21[0m - 
+[91merror[0m[90m 
+TS2353: [0mObject 
+literal may only 
+specify known 
+properties, and 
+'consumed' does not 
+exist in type '(Without
+<OtpVerificationUpdateI
+nput, OtpVerificationUn
+checkedUpdateInput> & O
+tpVerificationUnchecked
+UpdateInput) | 
+(Without<...> & OtpVeri
+ficationUpdateInput)'.
+
+[7m49[0m             
+data: { consumed: true 
+},
+[7m  [0m [91m       
+             
+~~~~~~~~[0m
+
+  [96mnode_modules/.pr
+isma/client/index.d.ts
+[0m:[93m13743[0m:[93
+m5[0m
+    [7m13743[0m     
+data: XOR<OtpVerificati
+onUpdateInput, OtpVerif
+icationUncheckedUpdateI
+nput>
+    [7m     [0m 
+[96m    ~~~~[0m
+    The expected type 
+comes from property 
+'data' which is 
+declared here on type 
+'{ select?: OtpVerifica
+tionSelect<DefaultArgs>
+; omit?: OtpVerificatio
+nOmit<DefaultArgs>; 
+data: (Without<OtpVerif
+icationUpdateInput, Otp
+VerificationUncheckedUp
+dateInput> & OtpVerific
+ationUncheckedUpdateInp
+ut) | (Without<...> & O
+tpVerificationUpdateInp
+ut); where: OtpVerifica
+tionWhereUniqueInput; 
+}'
+[96msrc/candidates/can
+didates.service.ts[0m:
+[93m60[0m:[93m17[0m
+ - [91merror[0m[90m 
+TS2353: [0mObject 
+literal may only 
+specify known 
+properties, and 
+'passportNumber' does 
+not exist in type '(Wit
+hout<CandidateCreateInp
+ut, CandidateUncheckedC
+reateInput> & Candidate
+UncheckedCreateInput) 
+| (Without<...> & 
+CandidateCreateInput)'.
+
+[7m60[0m             
+    passportNumber: 
+data.passportNumber,
+[7m  [0m [91m       
+         
+~~~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.pr
+isma/client/index.d.ts
+[0m:[93m16195[0m:[93
+m5[0m
+    [7m16195[0m     
+data: XOR<CandidateCrea
+teInput, CandidateUnche
+ckedCreateInput>
+    [7m     [0m 
+[96m    ~~~~[0m
+    The expected type 
+comes from property 
+'data' which is 
+declared here on type 
+'{ select?: CandidateSe
+lect<DefaultArgs>; 
+omit?: CandidateOmit<De
+faultArgs>; include?: C
+andidateInclude<Default
+Args>; data: 
+(Without<...> & Candida
+teUncheckedCreateInput)
+ | (Without<...> & 
+CandidateCreateInput); 
+}'
+
+Found 3 error(s).
+

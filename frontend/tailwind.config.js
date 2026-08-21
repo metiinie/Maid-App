@@ -9,16 +9,16 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                'ethiopia-gold': '#D4AF37',
-                'ethiopia-gold-light': '#E8C84A',
-                'ethiopia-navy': '#0A192F',
-                'ethiopia-navy-light': '#112240',
-                'ethiopia-crimson': '#DC2626',
-                'ethiopia-emerald': '#10B981',
-            },
-            fontFamily: {
-                sans: ['Inter'],
-                'ethiopic': ['NotoSansEthiopic'],
+                brand: {
+                    blue: '#1E3A8A',        // Deep Royal Blue
+                    'blue-light': '#2563EB',  // Bright Royal Blue
+                    'blue-dark': '#0F172A',   // Navy Blue
+                    green: '#059669',       // Emerald Green
+                    'green-light': '#10B981', // Bright Emerald Green
+                    white: '#FFFFFF',       // Pure White
+                    bg: '#F8FAFC',          // Light Slate Background
+                    card: '#FFFFFF',        // Card White
+                },
             },
         },
     },

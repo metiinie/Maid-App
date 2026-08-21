@@ -35,7 +35,7 @@ export default function MessagesScreen() {
                 {threads.map((thread) => (
                     <TouchableOpacity
                         key={thread.id}
-                        onPress={() => router.push(`/messages/${thread.id}`)}
+                        onPress={() => router.push(`/messages/${thread.id}` as any)}
                         className="bg-white p-4 rounded-xl mb-3 border border-slate-200 flex-row items-center justify-between"
                     >
                         <View className="flex-row items-center flex-1 mr-3">

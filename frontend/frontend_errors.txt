@@ -1,0 +1,1 @@
+﻿app/(tabs)/messages.tsx(38,52): error TS2345: Argument of type '`/messages/${string}`' is not assignable to parameter of type '"/candidates" | "/agencies" | "/notifications" | "/vacancies" | RelativePathString | ExternalPathString | "/../services/storage" | ... 89 more ... | { ...; }'.

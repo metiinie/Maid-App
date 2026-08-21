@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Linking, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Heart, Briefcase, MapPin, DollarSign, Calendar, Clock, ShieldCheck, CheckCircle2, Building2, Send } from 'lucide-react-native';
+import { ArrowLeft, Heart, MapPin, ShieldCheck, CheckCircle2, Send } from 'lucide-react-native';
 
 export default function VacancyDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -9,7 +9,6 @@ export default function VacancyDetailScreen() {
     const [isSaved, setIsSaved] = useState(false);
     const [applyModalVisible, setApplyModalVisible] = useState(false);
     const [coverLetter, setCoverLetter] = useState('');
-    const [additionalNotes, setAdditionalNotes] = useState('');
 
     // Mock vacancy detail matching schema
     const vacancy = {
@@ -69,27 +68,27 @@ export default function VacancyDetailScreen() {
 
             <ScrollView className="flex-1 p-4 space-y-4">
                 {/* Main Job Card */}
-                <View className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <View className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                     <View className="flex-row items-center justify-between mb-2">
-                        <View className="bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                            <Text className="text-xs font-bold text-blue-700">{vacancy.category.name}</Text>
+                        <View className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                            <Text className="text-xs font-bold text-blue-900">{vacancy.category.name}</Text>
                         </View>
                         <Text className="text-xs text-slate-400 font-medium">Ref #{vacancy.id}</Text>
                     </View>
                     <Text className="text-xl font-bold text-slate-900 mb-1">{vacancy.title}</Text>
                     <View className="flex-row items-center mb-4">
-                        <MapPin size={16} color="#10B981" />
-                        <Text className="text-sm font-semibold text-emerald-600 ml-1">{vacancy.country} ({vacancy.city})</Text>
+                        <MapPin size={16} color="#059669" />
+                        <Text className="text-sm font-semibold text-emerald-700 ml-1">{vacancy.country} ({vacancy.city})</Text>
                     </View>
 
-                    <View className="bg-slate-50 p-4 rounded-xl flex-row items-center justify-between border border-slate-100">
+                    <View className="bg-slate-50 p-4 rounded-xl flex-row items-center justify-between border border-slate-200">
                         <View>
-                            <Text className="text-xs text-slate-400 font-medium">Monthly Salary</Text>
-                            <Text className="text-xl font-extrabold text-emerald-600">${vacancy.salaryMin} - ${vacancy.salaryMax} {vacancy.salaryCurrency}</Text>
+                            <Text className="text-xs text-slate-500 font-medium">Monthly Salary</Text>
+                            <Text className="text-xl font-extrabold text-emerald-700">${vacancy.salaryMin} - ${vacancy.salaryMax} {vacancy.salaryCurrency}</Text>
                         </View>
                         <View className="items-end">
-                            <Text className="text-xs text-slate-400 font-medium">Contract</Text>
-                            <Text className="text-sm font-bold text-slate-800">{vacancy.contractPeriodYears} Years</Text>
+                            <Text className="text-xs text-slate-500 font-medium">Contract</Text>
+                            <Text className="text-sm font-bold text-slate-900">{vacancy.contractPeriodYears} Years</Text>
                         </View>
                     </View>
                 </View>
@@ -99,26 +98,26 @@ export default function VacancyDetailScreen() {
                     <Text className="text-sm font-bold text-slate-900 mb-3">Provided Package & Benefits</Text>
                     <View className="flex-row flex-wrap gap-2">
                         {vacancy.visaSponsorship && (
-                            <View className="bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 flex-row items-center">
-                                <CheckCircle2 size={16} color="#10B981" />
+                            <View className="bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 flex-row items-center">
+                                <CheckCircle2 size={16} color="#059669" />
                                 <Text className="text-xs font-bold text-emerald-800 ml-1.5">Visa Sponsorship</Text>
                             </View>
                         )}
                         {vacancy.accommodationProvided && (
-                            <View className="bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 flex-row items-center">
-                                <CheckCircle2 size={16} color="#10B981" />
+                            <View className="bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 flex-row items-center">
+                                <CheckCircle2 size={16} color="#059669" />
                                 <Text className="text-xs font-bold text-emerald-800 ml-1.5">Free Accommodation</Text>
                             </View>
                         )}
                         {vacancy.mealsProvided && (
-                            <View className="bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 flex-row items-center">
-                                <CheckCircle2 size={16} color="#10B981" />
+                            <View className="bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 flex-row items-center">
+                                <CheckCircle2 size={16} color="#059669" />
                                 <Text className="text-xs font-bold text-emerald-800 ml-1.5">Full Meals Included</Text>
                             </View>
                         )}
                         {vacancy.healthInsurance && (
-                            <View className="bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 flex-row items-center">
-                                <CheckCircle2 size={16} color="#10B981" />
+                            <View className="bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 flex-row items-center">
+                                <CheckCircle2 size={16} color="#059669" />
                                 <Text className="text-xs font-bold text-emerald-800 ml-1.5">Medical Insurance</Text>
                             </View>
                         )}
@@ -136,7 +135,7 @@ export default function VacancyDetailScreen() {
                     <Text className="text-sm font-bold text-slate-900 mb-3">Requirements & Clearances</Text>
                     {vacancy.requirements.map((req, idx) => (
                         <View key={idx} className="flex-row items-start mb-2.5">
-                            <ShieldCheck size={16} color="#3B82F6" className="mt-0.5 mr-2" />
+                            <ShieldCheck size={16} color="#2563EB" className="mt-0.5 mr-2" />
                             <Text className="text-xs text-slate-700 font-medium flex-1">{req}</Text>
                         </View>
                     ))}
@@ -145,7 +144,7 @@ export default function VacancyDetailScreen() {
 
             {/* Apply CTA Button */}
             <View className="p-4 bg-white border-t border-slate-200">
-                <TouchableOpacity onPress={() => setApplyModalVisible(true)} className="bg-emerald-500 py-3.5 rounded-xl flex-row justify-center items-center">
+                <TouchableOpacity onPress={() => setApplyModalVisible(true)} className="bg-emerald-600 py-3.5 rounded-xl flex-row justify-center items-center active:opacity-90">
                     <Send size={18} color="#FFFFFF" />
                     <Text className="text-white font-bold text-sm ml-2">Apply for Vacancy</Text>
                 </TouchableOpacity>
@@ -156,7 +155,7 @@ export default function VacancyDetailScreen() {
                 <View className="flex-1 justify-end bg-black/60">
                     <View className="bg-white p-6 rounded-t-3xl border-t border-slate-200">
                         <Text className="text-lg font-bold text-slate-900 mb-1">Apply for {vacancy.title}</Text>
-                        <Text className="text-xs text-slate-500 mb-4">Your verified job seeker profile will be submitted to {vacancy.agency.name}.</Text>
+                        <Text className="text-xs text-slate-500 mb-4">Your profile will be submitted to {vacancy.agency.name}.</Text>
 
                         <Text className="text-xs font-semibold text-slate-700 mb-1">Cover Letter / Introduction (Optional)</Text>
                         <TextInput
@@ -168,11 +167,11 @@ export default function VacancyDetailScreen() {
                             className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm text-slate-900 mb-4"
                         />
 
-                        <View className="flex-row space-x-3">
+                        <View className="flex-row gap-3">
                             <TouchableOpacity onPress={() => setApplyModalVisible(false)} className="flex-1 bg-slate-100 py-3.5 rounded-xl items-center">
                                 <Text className="text-slate-700 font-bold text-sm">Cancel</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={handleSubmitApplication} className="flex-1 bg-emerald-500 py-3.5 rounded-xl items-center">
+                            <TouchableOpacity onPress={handleSubmitApplication} className="flex-1 bg-emerald-600 py-3.5 rounded-xl items-center">
                                 <Text className="text-white font-bold text-sm">Submit Application</Text>
                             </TouchableOpacity>
                         </View>

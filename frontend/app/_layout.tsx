@@ -9,11 +9,11 @@ export default function RootLayout() {
     return (
         <AuthProvider>
             <ChatProvider>
-                <StatusBar style="light" />
+                <StatusBar style="dark" />
                 <Stack
                     screenOptions={{
                         headerShown: false,
-                        contentStyle: { backgroundColor: '#0A192F' },
+                        contentStyle: { backgroundColor: '#F8FAFC' },
                         animation: 'slide_from_right',
                     }}
                 >

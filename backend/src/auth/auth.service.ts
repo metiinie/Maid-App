@@ -13,28 +13,28 @@ export class AuthService {
     ) { }
 
     async requestOtp(phone: string, purpose: string = 'registration') {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
         await this.prisma.otpVerification.create({
             data: {
                 phone,
-                otp,
+                code,
                 purpose,
                 expiresAt,
             },
         });
 
-        await this.smsService.sendOTP(phone, otp, purpose);
+        await this.smsService.sendOTP(phone, code, purpose);
         return { success: true, message: 'OTP sent successfully' };
     }
 
-    async verifyOtp(phone: string, otp: string) {
+    async verifyOtp(phone: string, code: string) {
         const record = await this.prisma.otpVerification.findFirst({
             where: {
                 phone,
-                otp,
-                isUsed: false,
+                code,
+                verified: false,
                 expiresAt: { gte: new Date() },
             },
             orderBy: { createdAt: 'desc' },
@@ -46,7 +46,7 @@ export class AuthService {
 
         await this.prisma.otpVerification.update({
             where: { id: record.id },
-            data: { isUsed: true },
+            data: { verified: true },
         });
 
         return { verified: true };
@@ -58,7 +58,7 @@ export class AuthService {
             throw new UnauthorizedException('Invalid phone number or PIN');
         }
 
-        const isValid = await bcrypt.compare(pin, user.pinHash);
+        const isValid = await bcrypt.compare(pin, user.password);
         if (!isValid) {
             throw new UnauthorizedException('Invalid phone number or PIN');
         }
@@ -79,7 +79,7 @@ export class AuthService {
     }
 
     async loginAdmin(email: string, pass: string) {
-        const admin = await this.prisma.agencyAdmin.findUnique({
+        const admin = await this.prisma.adminUser.findUnique({
             where: { email },
             include: { agency: true },
         });
@@ -88,7 +88,7 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const isValid = await bcrypt.compare(pass, admin.passwordHash);
+        const isValid = await bcrypt.compare(pass, admin.password);
         if (!isValid) {
             throw new UnauthorizedException('Invalid credentials');
         }
