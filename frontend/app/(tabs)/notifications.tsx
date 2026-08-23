@@ -19,27 +19,42 @@ import {
     ShieldCheck,
     ChevronRight,
     MessageSquare,
+    Plane,
+    Briefcase,
 } from 'lucide-react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { chatService } from '../../services/chatService';
 import { useChat } from '../../context/ChatContext';
-
-const FILTER_OPTIONS = [
-    { id: 'ALL', label: 'All Alerts' },
-    { id: 'UNREAD', label: 'Unread' },
-    { id: 'medical', label: 'Medical' },
-    { id: 'application', label: 'Applications' },
-    { id: 'inquiry', label: 'Inquiries' },
-];
+import { useAuth } from '../../context/AuthContext';
 
 export default function NotificationsScreen() {
     const router = useRouter();
+    const { activeWorkspace } = useAuth();
+    const isEmployer = activeWorkspace?.type === 'GULF_EMPLOYER';
+
     const { openChatWithAgency } = useChat();
 
     const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeFilter, setActiveFilter] = useState('ALL');
+
+    const filterOptions = isEmployer
+        ? [
+            { id: 'ALL', label: 'All Alerts' },
+            { id: 'UNREAD', label: 'Unread' },
+            { id: 'demand_order', label: 'Demand Orders' },
+            { id: 'medical', label: 'Medical & GAMCA' },
+            { id: 'visa', label: 'Visa & Flight' },
+            { id: 'inquiry', label: 'Agency Chat' },
+        ]
+        : [
+            { id: 'ALL', label: 'All Alerts' },
+            { id: 'UNREAD', label: 'Unread' },
+            { id: 'medical', label: 'Medical' },
+            { id: 'application', label: 'Applications' },
+            { id: 'inquiry', label: 'Inquiries' },
+        ];
 
     useFocusEffect(
         useCallback(() => {
@@ -55,42 +70,42 @@ export default function NotificationsScreen() {
             if (list.length === 0) {
                 setNotifications([
                     {
-                        id: 'notif-1',
-                        title: 'Medical Clearance Approved',
-                        body: 'Your GAMCA E-health medical clearance for Saudi Arabia has been marked as CLEARED by agency admin.',
-                        time: '2 hours ago',
+                        id: 'notif-101',
+                        title: 'Demand Order Candidate Allocated',
+                        body: 'Ethio-Gulf Manpower allocated 3 verified candidates for Demand Order #ET-DO-8402 (Housemaid & Cook).',
+                        time: '1 hour ago',
+                        type: 'demand_order',
+                        isRead: false,
+                        agency_id: 'agency-1',
+                        agency_name: 'Ethio-Gulf Overseas Recruitment',
+                    },
+                    {
+                        id: 'notif-102',
+                        title: 'GAMCA Medical Clearance Approved',
+                        body: 'Candidate ET-8492 (Alem Tadesse) has passed GAMCA E-health medical inspection for Saudi Arabia.',
+                        time: '3 hours ago',
                         type: 'medical',
                         isRead: false,
+                        candidate_id: 'cand-101',
                         agency_id: 'agency-1',
                         agency_name: 'Ethio-Gulf Overseas Recruitment',
                     },
                     {
-                        id: 'notif-2',
-                        title: 'Application Shortlisted',
-                        body: 'Your application for Housemaid & Cook (Ref #104) has been shortlisted by Ethio-Gulf Overseas Recruitment.',
+                        id: 'notif-103',
+                        title: 'Work Visa & Flight Confirmed',
+                        body: 'Work Visa #SA-849102 issued for Riyadh deployment. Flight scheduled via Ethiopian Airlines.',
                         time: 'Yesterday',
-                        type: 'application',
-                        isRead: false,
-                        vacancy_id: 'vac-101',
-                        agency_id: 'agency-1',
-                        agency_name: 'Ethio-Gulf Overseas Recruitment',
-                    },
-                    {
-                        id: 'notif-3',
-                        title: 'Inquiry Response Received',
-                        body: 'Blue Nile Foreign Employment responded to your candidate inquiry regarding domestic worker placement.',
-                        time: '2 days ago',
-                        type: 'inquiry',
+                        type: 'visa',
                         isRead: true,
                         agency_id: 'agency-2',
                         agency_name: 'Blue Nile Foreign Employment',
                     },
                     {
-                        id: 'notif-4',
-                        title: 'Flight Ticket Scheduled',
-                        body: 'Your flight ticket to Dubai (Riyadh transit) has been confirmed by Addis Overseas Agency.',
-                        time: '3 days ago',
-                        type: 'application',
+                        id: 'notif-104',
+                        title: 'Agency Inquiry Response Received',
+                        body: 'Addis Overseas Recruitment responded to your direct demand order inquiry for 5 Caregivers.',
+                        time: '2 days ago',
+                        type: 'inquiry',
                         isRead: true,
                         agency_id: 'agency-3',
                         agency_name: 'Addis Overseas Recruitment',
@@ -122,7 +137,6 @@ export default function NotificationsScreen() {
     }
 
     async function handleNotificationClick(n: any) {
-        // Mark read
         if (!n.isRead) {
             try {
                 await chatService.markNotificationRead(n.id);
@@ -132,13 +146,19 @@ export default function NotificationsScreen() {
             );
         }
 
-        // Action routing
-        if (n.type === 'inquiry' && n.agency_id) {
-            openChatWithAgency(n.agency_id, n.agency_name || 'Agency Support');
-        } else if (n.type === 'application') {
+        // Smart Action Routing
+        if (n.type === 'demand_order') {
             router.push('/(tabs)/vacancies' as any);
-        } else if (n.type === 'medical') {
-            router.push('/(tabs)/profile' as any);
+        } else if (n.type === 'inquiry' && n.agency_id) {
+            openChatWithAgency(n.agency_id, n.agency_name || 'Agency Support');
+        } else if (n.type === 'medical' || n.type === 'visa') {
+            if (n.candidate_id) {
+                router.push(`/candidate/${n.candidate_id}` as any);
+            } else {
+                router.push('/(tabs)/saved' as any);
+            }
+        } else {
+            router.push('/(tabs)/saved' as any);
         }
     }
 
@@ -156,12 +176,14 @@ export default function NotificationsScreen() {
             <View className="px-5 pt-14 pb-4 bg-white border-b border-slate-200">
                 <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center gap-2">
-                        <View className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 items-center justify-center">
-                            <Bell size={20} color="#059669" />
+                        <View className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 items-center justify-center">
+                            <Bell size={20} color="#D97706" />
                         </View>
                         <View>
                             <View className="flex-row items-center gap-2">
-                                <Text className="text-xl font-extrabold text-slate-900">Alerts & Status</Text>
+                                <Text className="text-xl font-extrabold text-slate-900">
+                                    {isEmployer ? 'Employer Recruitment Alerts' : 'Alerts & Status'}
+                                </Text>
                                 {unreadCount > 0 && (
                                     <View className="bg-amber-500 px-2 py-0.5 rounded-full">
                                         <Text className="text-white text-[10px] font-black">{unreadCount} New</Text>
@@ -169,7 +191,7 @@ export default function NotificationsScreen() {
                                 )}
                             </View>
                             <Text className="text-slate-500 text-xs mt-0.5 font-medium">
-                                Real-time application, medical & visa alerts
+                                Real-time demand order, GAMCA medical & visa alerts
                             </Text>
                         </View>
                     </View>
@@ -189,18 +211,18 @@ export default function NotificationsScreen() {
             {/* Filter Chips Bar */}
             <View className="px-5 mt-4 mb-2">
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-2 py-1">
-                    {FILTER_OPTIONS.map((f) => {
+                    {filterOptions.map((f) => {
                         const isSel = activeFilter === f.id;
                         return (
                             <TouchableOpacity
                                 key={f.id}
                                 onPress={() => setActiveFilter(f.id)}
                                 className={`px-3.5 py-1.5 rounded-full border ${isSel
-                                    ? 'bg-emerald-600 border-emerald-600 shadow-xs'
+                                    ? 'bg-slate-900 border-slate-900 shadow-xs'
                                     : 'bg-white border-slate-200'
                                     }`}
                             >
-                                <Text className={`text-xs font-bold ${isSel ? 'text-white' : 'text-slate-700'}`}>
+                                <Text className={`text-xs font-bold ${isSel ? 'text-amber-400 font-black' : 'text-slate-700'}`}>
                                     {f.label}
                                 </Text>
                             </TouchableOpacity>
@@ -222,7 +244,7 @@ export default function NotificationsScreen() {
                             <Bell size={32} color="#94A3B8" />
                             <Text className="text-slate-900 text-sm font-bold mt-3">No alerts found</Text>
                             <Text className="text-slate-500 text-xs text-center mt-1">
-                                You're all caught up! Check back later for updates.
+                                You're all caught up! Check back later for recruitment updates.
                             </Text>
                         </View>
                     ) : (
@@ -230,21 +252,25 @@ export default function NotificationsScreen() {
                             <Pressable
                                 key={n.id}
                                 onPress={() => handleNotificationClick(n)}
-                                className={`p-4 rounded-2xl mb-3 border ${n.isRead ? 'bg-white border-slate-200' : 'bg-emerald-50/80 border-emerald-200'
+                                className={`p-4 rounded-2xl mb-3 border ${n.isRead ? 'bg-white border-slate-200' : 'bg-amber-50/60 border-amber-200'
                                     } flex-row items-start shadow-xs active:opacity-90`}
                             >
                                 <View
-                                    className={`p-2.5 rounded-xl mr-3 mt-0.5 border ${n.type === 'medical'
-                                        ? 'bg-emerald-100 border-emerald-200'
-                                        : n.type === 'application'
-                                            ? 'bg-blue-100 border-blue-200'
-                                            : 'bg-indigo-100 border-indigo-200'
+                                    className={`p-2.5 rounded-xl mr-3 mt-0.5 border ${n.type === 'demand_order'
+                                        ? 'bg-amber-100 border-amber-200'
+                                        : n.type === 'medical'
+                                            ? 'bg-emerald-100 border-emerald-200'
+                                            : n.type === 'visa'
+                                                ? 'bg-blue-100 border-blue-200'
+                                                : 'bg-indigo-100 border-indigo-200'
                                         }`}
                                 >
-                                    {n.type === 'medical' ? (
+                                    {n.type === 'demand_order' ? (
+                                        <Briefcase size={18} color="#D97706" />
+                                    ) : n.type === 'medical' ? (
                                         <CheckCircle2 size={18} color="#059669" />
-                                    ) : n.type === 'application' ? (
-                                        <FileText size={18} color="#1E3A8A" />
+                                    ) : n.type === 'visa' ? (
+                                        <Plane size={18} color="#1D4ED8" />
                                     ) : (
                                         <MessageSquare size={18} color="#4338CA" />
                                     )}
@@ -266,8 +292,8 @@ export default function NotificationsScreen() {
                                             {n.agency_name || 'System Alert'}
                                         </Text>
                                         <View className="flex-row items-center gap-0.5">
-                                            <Text className="text-[10px] font-bold text-emerald-700">View Action</Text>
-                                            <ChevronRight size={12} color="#059669" />
+                                            <Text className="text-[10px] font-extrabold text-amber-600">View Action</Text>
+                                            <ChevronRight size={12} color="#D97706" />
                                         </View>
                                     </View>
                                 </View>
@@ -280,5 +306,3 @@ export default function NotificationsScreen() {
         </View>
     );
 }
-
-
