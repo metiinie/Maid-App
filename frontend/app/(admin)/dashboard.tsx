@@ -20,22 +20,29 @@ import {
     Users,
     Briefcase,
     CreditCard,
+    Building2,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { candidateService } from '../../services/candidateService';
 import { vacancyService } from '../../services/vacancyService';
 import { pipelineService } from '../../services/pipelineService';
 import { subscriptionService } from '../../services/subscriptionService';
+import { PremiumHeader } from '../../components/PremiumHeader';
+import { StatCard } from '../../components/StatCard';
 
 const stageFlow = [
-    { from: 'interviewing', to: 'medical_biometrics', label: 'Medical & Biometrics' },
-    { from: 'medical_biometrics', to: 'visa_processing', label: 'Visa Processing' },
-    { from: 'visa_processing', to: 'pre_departure_training', label: 'Pre-Departure Training' },
-    { from: 'pre_departure_training', to: 'deployed', label: 'Deployed' },
+    { from: 'APPLIED', to: 'UNDER_REVIEW', label: 'Move to Review' },
+    { from: 'UNDER_REVIEW', to: 'SHORTLISTED', label: 'Shortlist Candidate' },
+    { from: 'SHORTLISTED', to: 'SENT_TO_EMPLOYER', label: 'Send to Employer' },
+    { from: 'SENT_TO_EMPLOYER', to: 'EMPLOYER_REVIEW', label: 'Employer Review' },
+    { from: 'EMPLOYER_REVIEW', to: 'INTERVIEW', label: 'Schedule Interview' },
+    { from: 'INTERVIEW', to: 'SELECTED', label: 'Mark Selected' },
+    { key: 'SELECTED', to: 'DOCUMENTATION', label: 'Process Visa Docs' },
+    { from: 'DOCUMENTATION', to: 'DEPLOYED', label: 'Confirm Flight & Deploy' },
 ];
 
 export default function AdminDashboard() {
-    const { admin, logoutAdmin } = useAuth();
+    const { admin, logoutAdmin, activeWorkspace } = useAuth();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('candidates');
     const [candidates, setCandidates] = useState<any[]>([]);
@@ -118,69 +125,34 @@ export default function AdminDashboard() {
 
     return (
         <View className="flex-1 bg-slate-50">
-            {/* Navigation Header */}
-            <View className="bg-blue-900 px-5 pt-14 pb-4 flex-row items-center justify-between shadow-md">
-                <View className="flex-row items-center gap-3">
-                    <Pressable onPress={() => router.back()} className="p-1 rounded-full bg-blue-800">
-                        <ArrowLeft size={20} color="#FFFFFF" />
-                    </Pressable>
-                    <View className="w-8 h-8 rounded-lg bg-emerald-500 items-center justify-center">
-                        <ShieldCheck size={18} color="#FFFFFF" />
-                    </View>
-                    <View>
-                        <Text className="text-white text-base font-bold">Admin Portal</Text>
-                        <Text className="text-emerald-300 text-[10px] font-semibold">
-                            {admin?.agency_name || 'Addis Recruitment Agency'}
-                        </Text>
-                    </View>
-                </View>
+            {/* Premium Header */}
+            <PremiumHeader subtitle={activeWorkspace?.name || 'Recruitment Agency Management Portal'} />
 
-                <Pressable
-                    onPress={async () => {
-                        await logoutAdmin();
-                        router.replace('/');
-                    }}
-                    className="bg-blue-950 border border-blue-800 px-3 py-1.5 rounded-lg flex-row items-center gap-1.5"
-                >
-                    <LogOut size={12} color="#94A3B8" />
-                    <Text className="text-white text-[11px] font-bold">Sign Out</Text>
-                </Pressable>
-            </View>
-
-            {/* Quick Action Bar for Pipeline */}
-            <View className="px-5 pt-3">
+            {/* ATS Kanban Quick Banner */}
+            <View className="px-5 pt-4">
                 <Pressable
                     onPress={() => router.push('/(admin)/pipeline')}
-                    className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex-row items-center justify-between active:opacity-90 shadow-xs"
+                    className="bg-blue-950 border border-blue-900 p-4 rounded-3xl flex-row items-center justify-between shadow-xs active:opacity-90"
                 >
-                    <View className="flex-row items-center gap-2">
-                        <GitPullRequest size={18} color="#1E3A8A" />
-                        <View>
-                            <Text className="text-blue-950 text-xs font-extrabold">Open 5-Stage Kanban Board</Text>
-                            <Text className="text-blue-700 text-[10px]">Track candidate clearance & visa advancement</Text>
+                    <View className="flex-row items-center gap-3 flex-1 mr-2">
+                        <View className="w-10 h-10 rounded-2xl bg-blue-900 items-center justify-center border border-blue-800">
+                            <GitPullRequest size={20} color="#93C5FD" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-white text-xs font-extrabold">Open 9-Stage ATS Kanban Board</Text>
+                            <Text className="text-blue-200 text-[10px] font-semibold">Track GAMCA medicals, MOLSA permits & Enjaz visas</Text>
                         </View>
                     </View>
-                    <View className="bg-blue-900 px-2.5 py-1 rounded-lg">
-                        <Text className="text-white text-[10px] font-extrabold">Open Pipeline →</Text>
+                    <View className="bg-emerald-500 px-3.5 py-2 rounded-xl">
+                        <Text className="text-emerald-950 text-xs font-black">Open →</Text>
                     </View>
                 </Pressable>
             </View>
 
-            {/* Stats Row */}
-            <View className="px-5 pt-3 flex-row gap-3">
-                {[
-                    { v: candidates.length, l: 'Candidates', color: 'text-emerald-700', bg: 'bg-emerald-50' },
-                    { v: vacancies.length, l: 'Vacancies', color: 'text-blue-900', bg: 'bg-blue-50' },
-                    { v: pipelines.length, l: 'Pipelines', color: 'text-emerald-700', bg: 'bg-emerald-50' },
-                ].map((s) => (
-                    <View
-                        key={s.l}
-                        className="flex-1 bg-white border border-slate-200 p-3 rounded-xl items-center shadow-xs"
-                    >
-                        <Text className={`text-xl font-extrabold ${s.color}`}>{s.v}</Text>
-                        <Text className="text-slate-600 text-[10px] font-bold">{s.l}</Text>
-                    </View>
-                ))}
+            {/* Metrics Grid */}
+            <View className="px-5 pt-3 flex-row flex-wrap gap-3">
+                <StatCard label="Total Roster" value={candidates.length} icon={Users} color="#059669" bgColor="bg-emerald-50" trend="+12%" />
+                <StatCard label="Job Demands" value={vacancies.length} icon={Briefcase} color="#0284C7" bgColor="bg-sky-50" trend="Active" />
             </View>
 
             {/* Segmented Tab Bar */}
@@ -197,8 +169,8 @@ export default function AdminDashboard() {
                             key={tab.key}
                             onPress={() => setActiveTab(tab.key)}
                             className={`px-4 py-2 rounded-xl border ${isActive
-                                    ? 'bg-emerald-600 border-emerald-600'
-                                    : 'bg-white border-slate-200'
+                                ? 'bg-emerald-600 border-emerald-600'
+                                : 'bg-white border-slate-200'
                                 }`}
                         >
                             <Text
@@ -238,14 +210,14 @@ export default function AdminDashboard() {
                                         </Text>
                                         <View
                                             className={`px-2.5 py-0.5 rounded-full ${c.medical_status === 'cleared'
-                                                    ? 'bg-emerald-100 border border-emerald-200'
-                                                    : 'bg-slate-100 border border-slate-200'
+                                                ? 'bg-emerald-100 border border-emerald-200'
+                                                : 'bg-slate-100 border border-slate-200'
                                                 }`}
                                         >
                                             <Text
                                                 className={`text-[10px] font-bold ${c.medical_status === 'cleared'
-                                                        ? 'text-emerald-800'
-                                                        : 'text-slate-700'
+                                                    ? 'text-emerald-800'
+                                                    : 'text-slate-700'
                                                     }`}
                                             >
                                                 {c.medical_status}

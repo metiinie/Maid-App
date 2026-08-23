@@ -1,26 +1,88 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, Users, Briefcase, Bookmark, MessageSquare, Bell } from 'lucide-react-native';
+import { Home, Users, Briefcase, Bookmark, MessageSquare, Bell, GitPullRequest, Building2, ShieldCheck } from 'lucide-react-native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TabsLayout() {
+    const { activeWorkspace } = useAuth();
+    const type = activeWorkspace?.type || 'PERSONAL';
+
+    const getActiveColor = () => {
+        switch (type) {
+            case 'AGENCY':
+                return '#0284C7'; // Deep Sky Blue
+            case 'GULF_EMPLOYER':
+                return '#D97706'; // Amber Gold
+            case 'PLATFORM_ADMIN':
+                return '#7C3AED'; // Purple Governance
+            default:
+                return '#059669'; // Emerald Green
+        }
+    };
+
+    const activeColor = getActiveColor();
+
+    const getTabTitles = () => {
+        switch (type) {
+            case 'AGENCY':
+                return {
+                    home: 'Agency Hub',
+                    candidates: 'Roster',
+                    vacancies: 'Orders',
+                    saved: 'Pipeline',
+                    messages: 'Messages',
+                    alerts: 'Alerts',
+                };
+            case 'GULF_EMPLOYER':
+                return {
+                    home: 'Employer Hub',
+                    candidates: 'Talent Search',
+                    vacancies: 'My Requests',
+                    saved: 'Shortlist',
+                    messages: 'Chat',
+                    alerts: 'Alerts',
+                };
+            case 'PLATFORM_ADMIN':
+                return {
+                    home: 'Control Center',
+                    candidates: 'Candidates',
+                    vacancies: 'Vacancies',
+                    saved: 'Agencies',
+                    messages: 'Support',
+                    alerts: 'Audits',
+                };
+            default:
+                return {
+                    home: 'Home',
+                    candidates: 'Talent Pool',
+                    vacancies: 'Find Jobs',
+                    saved: 'Saved',
+                    messages: 'Messages',
+                    alerts: 'Alerts',
+                };
+        }
+    };
+
+    const titles = getTabTitles();
+
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: '#059669',   // Emerald Green active
-                tabBarInactiveTintColor: '#64748B', // Muted Slate
+                tabBarActiveTintColor: activeColor,
+                tabBarInactiveTintColor: '#64748B',
                 tabBarStyle: {
-                    backgroundColor: '#FFFFFF',       // Crisp White
-                    borderTopColor: '#E2E8F0',
+                    backgroundColor: '#FFFFFF',
+                    borderTopColor: '#F1F5F9',
                     borderTopWidth: 1,
                     height: 65,
                     paddingBottom: 8,
                     paddingTop: 8,
-                    elevation: 8,
+                    elevation: 10,
                     shadowColor: '#0F172A',
-                    shadowOffset: { width: 0, height: -2 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 8,
+                    shadowOffset: { width: 0, height: -3 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 10,
                 },
                 tabBarLabelStyle: {
                     fontSize: 10,
@@ -31,42 +93,50 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'Home',
-                    tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+                    title: titles.home,
+                    tabBarIcon: ({ color, size }) => (
+                        type === 'AGENCY' ? <Building2 size={size} color={color} /> :
+                            type === 'GULF_EMPLOYER' ? <Building2 size={size} color={color} /> :
+                                type === 'PLATFORM_ADMIN' ? <ShieldCheck size={size} color={color} /> :
+                                    <Home size={size} color={color} />
+                    ),
                 }}
             />
             <Tabs.Screen
                 name="candidates"
                 options={{
-                    title: 'Candidates',
+                    title: titles.candidates,
                     tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
                 }}
             />
             <Tabs.Screen
                 name="vacancies"
                 options={{
-                    title: 'Jobs',
+                    title: titles.vacancies,
                     tabBarIcon: ({ color, size }) => <Briefcase size={size} color={color} />,
                 }}
             />
             <Tabs.Screen
                 name="saved"
                 options={{
-                    title: 'Saved',
-                    tabBarIcon: ({ color, size }) => <Bookmark size={size} color={color} />,
+                    title: titles.saved,
+                    tabBarIcon: ({ color, size }) => (
+                        type === 'AGENCY' ? <GitPullRequest size={size} color={color} /> :
+                            <Bookmark size={size} color={color} />
+                    ),
                 }}
             />
             <Tabs.Screen
                 name="messages"
                 options={{
-                    title: 'Messages',
+                    title: titles.messages,
                     tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
                 }}
             />
             <Tabs.Screen
                 name="notifications"
                 options={{
-                    title: 'Alerts',
+                    title: titles.alerts,
                     tabBarIcon: ({ color, size }) => <Bell size={size} color={color} />,
                 }}
             />
