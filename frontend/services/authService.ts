@@ -56,4 +56,7 @@ export const authService = {
 
     getAdminProfile: () =>
         api.get('/admin/auth/me'),
+
+    getWorkspaces: () =>
+        api.get('/auth/workspaces'),
 };

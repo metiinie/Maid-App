@@ -15,12 +15,13 @@ const api = axios.create({
     timeout: 15000,
 });
 
-// Request Interceptor: Attach JWT Token from storage
+// Request Interceptor: Attach JWT Token and Active Workspace Header
 api.interceptors.request.use(
     async (config) => {
         try {
             const adminToken = await storage.getItem('ethio_admin_token');
             const userToken = await storage.getItem('ethio_user_token');
+            const activeWorkspaceId = await storage.getItem('ethio_active_workspace_id');
 
             if (adminToken && config.url?.includes('/admin')) {
                 config.headers.Authorization = `Bearer ${adminToken}`;
@@ -28,6 +29,10 @@ api.interceptors.request.use(
                 config.headers.Authorization = `Bearer ${userToken}`;
             } else if (adminToken) {
                 config.headers.Authorization = `Bearer ${adminToken}`;
+            }
+
+            if (activeWorkspaceId) {
+                config.headers['x-workspace-id'] = activeWorkspaceId;
             }
         } catch (err) {
             // Storage safe fallback
