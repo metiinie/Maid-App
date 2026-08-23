@@ -1,6 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import {
+    View,
+    Text,
+    ScrollView,
+    Pressable,
+    TextInput,
+    ActivityIndicator,
+    RefreshControl,
+} from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
     ShieldCheck,
     Search,
@@ -9,9 +17,14 @@ import {
     Globe,
     Lock,
     X,
+    Sparkles,
+    MessageSquare,
+    Filter,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
-import { RoleToggle } from '../../components/RoleToggle';
+import { useChat } from '../../context/ChatContext';
+import { candidateService } from '../../services/candidateService';
+import { vacancyService } from '../../services/vacancyService';
 import { CandidateCard, CandidateProps } from '../../components/CandidateCard';
 import { VacancyCard, VacancyProps } from '../../components/VacancyCard';
 import { InquiryModal } from '../../components/InquiryModal';
@@ -52,12 +65,23 @@ const sampleCandidates: CandidateProps[] = [
         avatar_initials: 'AM',
         avatar_bg: 'bg-emerald-800',
     },
+    {
+        id: 'cand-4',
+        first_name: 'Genet',
+        last_name: 'Tesfaye',
+        role: 'Senior Caregiver & Nanny',
+        experience_years: 6,
+        medical_status: 'Cleared',
+        languages: ['English', 'Amharic'],
+        avatar_initials: 'GT',
+        avatar_bg: 'bg-indigo-900',
+    },
 ];
 
 const sampleVacancies: VacancyProps[] = [
     {
         id: 'vac-1',
-        title: 'Domestic Worker',
+        title: 'Domestic Worker & Housekeeper',
         country: 'Saudi Arabia',
         country_flag: '🇸🇦',
         salary_range: 'SAR 1,200 – 1,600 / month',
@@ -69,7 +93,7 @@ const sampleVacancies: VacancyProps[] = [
     },
     {
         id: 'vac-2',
-        title: 'Professional Driver',
+        title: 'Professional Logistics Driver',
         country: 'UAE',
         country_flag: '🇦🇪',
         salary_range: 'AED 2,500 – 3,500 / month',
@@ -81,7 +105,7 @@ const sampleVacancies: VacancyProps[] = [
     },
     {
         id: 'vac-3',
-        title: 'Head Chef / Hospitality Cook',
+        title: 'Head Chef & Hospitality Cook',
         country: 'Qatar',
         country_flag: '🇶🇦',
         salary_range: 'QAR 3,000 – 4,500 / month',
@@ -91,14 +115,28 @@ const sampleVacancies: VacancyProps[] = [
         deadline: '20 Oct 2026',
         benefits: ['Accommodation', 'Overtime Pay'],
     },
+    {
+        id: 'vac-4',
+        title: 'Elderly Caregiver & Nurse Assistant',
+        country: 'Kuwait',
+        country_flag: '🇰🇼',
+        salary_range: 'KWD 180 – 250 / month',
+        contract_duration: '2-year contract',
+        employer_type: 'Private Residence',
+        positions_available: 4,
+        deadline: '05 Nov 2026',
+        benefits: ['Private Room', 'Medical Insurance', 'Flight Ticket'],
+    },
 ];
 
 export default function HomeScreen() {
     const router = useRouter();
     const { user, admin, activeWorkspace, switchWorkspace, workspaces } = useAuth();
+    const { openChatWithAgency } = useChat();
 
-    // Mode is derived from active workspace or defaults to employer
+    // Derived mode from active workspace (GULF_EMPLOYER -> employer, PERSONAL -> seeker)
     const mode = activeWorkspace?.type === 'GULF_EMPLOYER' ? 'employer' : 'seeker';
+
     const [activeChip, setActiveChip] = useState('All');
     const [selectedCandidate, setSelectedCandidate] = useState<CandidateProps | null>(null);
     const [inquiryModalVisible, setInquiryModalVisible] = useState(false);
@@ -106,7 +144,43 @@ export default function HomeScreen() {
     const [showModeBanner, setShowModeBanner] = useState(true);
     const [showGuestBanner, setShowGuestBanner] = useState(true);
 
+    const [candidates, setCandidates] = useState<CandidateProps[]>(sampleCandidates);
+    const [vacancies, setVacancies] = useState<VacancyProps[]>(sampleVacancies);
+    const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+
     const isAuthenticated = !!user || !!admin;
+
+    useFocusEffect(
+        useCallback(() => {
+            loadFeedData(false);
+        }, [mode])
+    );
+
+    async function loadFeedData(showLoader = true) {
+        if (showLoader) setLoading(true);
+        try {
+            if (mode === 'employer') {
+                const res: any = await candidateService.getPublicCandidates();
+                const list = res.data || [];
+                if (list.length > 0) setCandidates(list);
+            } else {
+                const res: any = await vacancyService.getPublicVacancies();
+                const list = res.data || [];
+                if (list.length > 0) setVacancies(list);
+            }
+        } catch {
+            // Keep sample datasets if backend call fails
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        loadFeedData(false);
+    };
 
     const handleSelectCandidate = (cand: CandidateProps) => {
         if (!isAuthenticated) {
@@ -117,12 +191,37 @@ export default function HomeScreen() {
         setInquiryModalVisible(true);
     };
 
-    const categories = ['All', 'Domestic', 'Driver', 'Chef', 'Security', 'Nurse'];
-    const countries = ['All Countries', '🇸🇦 Saudi', '🇦🇪 UAE', '🇶🇦 Qatar', '🇰🇼 Kuwait'];
+    const categories = ['All', 'Domestic', 'Driver', 'Chef', 'Caregiver', 'Security'];
+    const countries = ['All Countries', 'Saudi Arabia', 'UAE', 'Qatar', 'Kuwait'];
+
+    // Search and Chip Filtering logic
+    const filteredCandidates = candidates.filter((c) => {
+        const queryMatch =
+            !searchQuery ||
+            `${c.first_name} ${c.last_name} ${c.role}`.toLowerCase().includes(searchQuery.toLowerCase());
+        const chipMatch =
+            activeChip === 'All' ||
+            (activeChip === 'Domestic' && c.role.toLowerCase().includes('domestic')) ||
+            (activeChip === 'Driver' && c.role.toLowerCase().includes('driver')) ||
+            (activeChip === 'Chef' && (c.role.toLowerCase().includes('cook') || c.role.toLowerCase().includes('chef'))) ||
+            (activeChip === 'Caregiver' && c.role.toLowerCase().includes('caregiver'));
+        return queryMatch && chipMatch;
+    });
+
+    const filteredVacancies = vacancies.filter((v) => {
+        const queryMatch =
+            !searchQuery ||
+            `${v.title} ${v.country} ${v.employer_type}`.toLowerCase().includes(searchQuery.toLowerCase());
+        const chipMatch =
+            activeChip === 'All' ||
+            activeChip === 'All Countries' ||
+            v.country.toLowerCase().includes(activeChip.toLowerCase());
+        return queryMatch && chipMatch;
+    });
 
     return (
         <View className="flex-1 bg-slate-50">
-            {/* Deep Navy Top Header (#0F172A) */}
+            {/* Deep Navy Header */}
             <View className="bg-slate-900 px-5 pt-14 pb-5 shadow-md">
                 <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center flex-1 mr-2">
@@ -149,7 +248,7 @@ export default function HomeScreen() {
                     {/* Mode Context Badge */}
                     <View className="bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-full">
                         <Text className="text-amber-400 text-[10px] font-black uppercase">
-                            {mode === 'employer' ? 'EMPLOYER FEED' : 'CANDIDATE FEED'}
+                            {mode === 'employer' ? 'EMPLOYER FEED' : 'JOB SEEKER FEED'}
                         </Text>
                     </View>
                 </View>
@@ -205,7 +304,7 @@ export default function HomeScreen() {
                 </View>
             )}
 
-            {/* Unauthenticated Guest Sign-In Banner (Dismissable) */}
+            {/* Unauthenticated Guest Sign-In Banner */}
             {!isAuthenticated && showGuestBanner && (
                 <View className="bg-amber-500 px-5 py-2.5 flex-row items-center justify-between">
                     <View className="flex-1 mr-2">
@@ -227,7 +326,11 @@ export default function HomeScreen() {
             )}
 
             {/* Main Content Area */}
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            <ScrollView
+                className="flex-1"
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#059669']} />}
+                showsVerticalScrollIndicator={false}
+            >
                 {/* Search Bar */}
                 <View className="px-5 pt-4">
                     <View className="bg-white border border-slate-200 rounded-full px-4 py-3 flex-row items-center shadow-xs">
@@ -242,6 +345,11 @@ export default function HomeScreen() {
                             }
                             className="flex-1 ml-2 text-slate-900 text-sm font-medium"
                         />
+                        {searchQuery.length > 0 && (
+                            <Pressable onPress={() => setSearchQuery('')} className="p-1">
+                                <X size={16} color="#94A3B8" />
+                            </Pressable>
+                        )}
                     </View>
                 </View>
 
@@ -274,25 +382,34 @@ export default function HomeScreen() {
                 </ScrollView>
 
                 {/* Content Section */}
-                {mode === 'employer' ? (
+                {loading ? (
+                    <ActivityIndicator color="#059669" size="large" className="mt-10" />
+                ) : mode === 'employer' ? (
                     <View className="px-5 pb-10">
                         <View className="flex-row items-center justify-between mb-3">
                             <Text className="text-slate-900 text-sm font-black uppercase tracking-wider">
                                 Featured Verified Candidates
                             </Text>
                             <Text className="text-emerald-700 text-xs font-bold">
-                                {sampleCandidates.length} Cleared
+                                {filteredCandidates.length} Cleared
                             </Text>
                         </View>
 
-                        {sampleCandidates.map((cand) => (
-                            <CandidateCard
-                                key={cand.id}
-                                candidate={cand}
-                                onPress={() => handleSelectCandidate(cand)}
-                                onVideoPress={() => handleSelectCandidate(cand)}
-                            />
-                        ))}
+                        {filteredCandidates.length === 0 ? (
+                            <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-2">
+                                <Search size={28} color="#94A3B8" />
+                                <Text className="text-slate-900 text-xs font-bold mt-2">No matching candidates found</Text>
+                            </View>
+                        ) : (
+                            filteredCandidates.map((cand) => (
+                                <CandidateCard
+                                    key={cand.id}
+                                    candidate={cand}
+                                    onPress={() => handleSelectCandidate(cand)}
+                                    onVideoPress={() => handleSelectCandidate(cand)}
+                                />
+                            ))
+                        )}
                     </View>
                 ) : (
                     <View className="px-5 pb-10">
@@ -301,19 +418,26 @@ export default function HomeScreen() {
                                 Latest Overseas Job Vacancies
                             </Text>
                             <Text className="text-amber-700 text-xs font-bold">
-                                {sampleVacancies.length} Verified
+                                {filteredVacancies.length} Verified
                             </Text>
                         </View>
 
-                        {sampleVacancies.map((vac) => (
-                            <VacancyCard
-                                key={vac.id}
-                                vacancy={vac}
-                                onPress={() => {
-                                    router.push(`/vacancy/${vac.id}` as any);
-                                }}
-                            />
-                        ))}
+                        {filteredVacancies.length === 0 ? (
+                            <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-2">
+                                <Search size={28} color="#94A3B8" />
+                                <Text className="text-slate-900 text-xs font-bold mt-2">No matching job vacancies found</Text>
+                            </View>
+                        ) : (
+                            filteredVacancies.map((vac) => (
+                                <VacancyCard
+                                    key={vac.id}
+                                    vacancy={vac}
+                                    onPress={() => {
+                                        router.push(`/vacancy/${vac.id}` as any);
+                                    }}
+                                />
+                            ))
+                        )}
                     </View>
                 )}
             </ScrollView>
@@ -328,4 +452,5 @@ export default function HomeScreen() {
         </View>
     );
 }
+
 
