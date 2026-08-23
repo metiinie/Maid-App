@@ -5,7 +5,7 @@ export const chatService = {
         api.get('/conversations'),
 
     getOrCreateConversation: (agencyId: string, contextType = 'candidate_inquiry', contextId: string | null = null) =>
-        api.post('/conversations', { agency_id: agencyId, context_type: contextType, context_id: contextId }),
+        api.post('/conversations', { agencyId, agency_id: agencyId, context_type: contextType, context_id: contextId }),
 
     getMessages: (conversationId: string, isAdmin = false) =>
         api.get(isAdmin ? `/admin/conversations/${conversationId}/messages` : `/conversations/${conversationId}/messages`),

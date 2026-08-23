@@ -10,46 +10,14 @@ export const authService = {
     registerUser: (data: any) =>
         api.post('/auth/register', data),
 
-    loginUser: async (phone: string, pin: string) => {
-        try {
-            const res = await api.post('/auth/login/user', { phone, pin });
-            return res;
-        } catch (err) {
-            // Demo fallback if backend database user is not seeded yet
-            return {
-                data: {
-                    token: 'demo-user-jwt-token-12345',
-                    user: {
-                        id: 'usr-101',
-                        first_name: 'Alem',
-                        last_name: 'Tadesse',
-                        phone,
-                        role: 'CANDIDATE',
-                    },
-                },
-            };
-        }
-    },
+    resetPin: (data: { phone: string; otp: string; newPin: string }) =>
+        api.post('/auth/pin/reset', data),
 
-    loginAdmin: async (email: string, password: string) => {
-        try {
-            const res = await api.post('/auth/login/admin', { email, password });
-            return res;
-        } catch (err) {
-            // Demo fallback if backend database admin is not seeded yet
-            return {
-                data: {
-                    token: 'demo-admin-jwt-token-67890',
-                    admin: {
-                        id: 'adm-501',
-                        email,
-                        role: 'AGENCY_ADMIN',
-                        agency_name: 'Addis Overseas Agency',
-                    },
-                },
-            };
-        }
-    },
+    loginUser: (phone: string, pin: string) =>
+        api.post('/auth/login/user', { phone, pin }),
+
+    loginAdmin: (email: string, password: string) =>
+        api.post('/auth/login/admin', { email, password }),
 
     getUserProfile: () =>
         api.get('/users/me'),
