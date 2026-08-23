@@ -55,7 +55,7 @@ const stageFlow = [
 export default function AdminDashboard() {
     const { admin, logoutAdmin, activeWorkspace } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState('candidates');
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [candidates, setCandidates] = useState<any[]>([]);
     const [vacancies, setVacancies] = useState<any[]>([]);
     const [pipelines, setPipelines] = useState<any[]>([]);
@@ -440,10 +440,10 @@ export default function AdminDashboard() {
     });
 
     const tabs = [
+        { key: 'dashboard', label: 'Dashboard' },
         { key: 'candidates', label: `Candidates (${candidates.length})` },
-        { key: 'vacancies', label: `Demand Orders (${vacancies.length})` },
-        { key: 'pipelines', label: `ATS Pipeline (${pipelines.length})` },
-        { key: 'billing', label: 'SaaS Billing' },
+        { key: 'vacancies', label: `Vacancies (${vacancies.length})` },
+        { key: 'pipelines', label: `Pipeline (${pipelines.length})` },
     ];
 
     if (!admin) {
@@ -526,11 +526,14 @@ export default function AdminDashboard() {
                 </Pressable>
             </View>
 
-            {/* Metrics Grid */}
-            <View className="px-5 pt-3 flex-row flex-wrap gap-3">
-                <StatCard label="Total Roster" value={candidates.length} icon={Users} color="#0F172A" bgColor="bg-slate-100" trend="+12%" />
-                <StatCard label="Demand Orders" value={vacancies.length} icon={Briefcase} color="#D97706" bgColor="bg-amber-50" trend="Active" />
-            </View>
+            {/* Metrics Grid — only show on Dashboard tab */}
+            {activeTab === 'dashboard' && (
+                <View className="px-5 pt-3 flex-row flex-wrap gap-3">
+                    <StatCard label="Total Roster" value={candidates.length} icon={Users} color="#0F172A" bgColor="bg-slate-100" trend="+12%" />
+                    <StatCard label="Vacancies" value={vacancies.length} icon={Briefcase} color="#D97706" bgColor="bg-amber-50" trend="Active" />
+                    <StatCard label="Pipeline" value={pipelines.length} icon={GitPullRequest} color="#7C3AED" bgColor="bg-purple-50" trend="Live" />
+                </View>
+            )}
 
             {/* Segmented Tab Bar */}
             <ScrollView
@@ -582,6 +585,77 @@ export default function AdminDashboard() {
                 <ActivityIndicator color="#F59E0B" size="large" className="mt-10" />
             ) : (
                 <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+                    {/* DASHBOARD TAB */}
+                    {activeTab === 'dashboard' && (
+                        <View>
+                            {/* Active License Card */}
+                            <View className="bg-slate-900 p-5 rounded-3xl mb-4 border border-slate-800 shadow-md">
+                                <View className="flex-row items-center justify-between mb-2">
+                                    <View className="flex-row items-center gap-2">
+                                        <View className="w-8 h-8 rounded-xl bg-amber-500 items-center justify-center">
+                                            <CreditCard size={18} color="#0F172A" />
+                                        </View>
+                                        <View>
+                                            <Text className="text-white text-base font-black">Active Agency License</Text>
+                                            <Text className="text-amber-400 text-xs font-bold">MOLSA/LIC/2024/849</Text>
+                                        </View>
+                                    </View>
+                                    <View className="bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-1 rounded-full">
+                                        <Text className="text-emerald-400 text-[10px] font-black uppercase">ACTIVE</Text>
+                                    </View>
+                                </View>
+
+                                <View className="bg-slate-800/80 p-3 rounded-2xl border border-slate-700/80 my-2 gap-1.5">
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-slate-400 text-xs font-medium">Plan Level:</Text>
+                                        <Text className="text-amber-400 text-xs font-extrabold">Pro Overseas Agency</Text>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-slate-400 text-xs font-medium">Roster Usage:</Text>
+                                        <Text className="text-white text-xs font-bold">{candidates.length} / 100 Candidates</Text>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-slate-400 text-xs font-medium">Active Pipelines:</Text>
+                                        <Text className="text-white text-xs font-bold">{pipelines.length} Tracking</Text>
+                                    </View>
+                                </View>
+
+                                <Text className="text-slate-400 text-[11px] font-medium text-center mt-1">
+                                    Renews Dec 31, 2026 • Chapa Payment Gateway
+                                </Text>
+                            </View>
+
+                            {/* Recent Activity Summary */}
+                            <Text className="text-slate-900 text-sm font-black mb-3">Recent Activity</Text>
+
+                            {pipelines.slice(0, 3).map((p: any) => (
+                                <View key={p.id} className="bg-white border border-slate-200 rounded-2xl p-3.5 mb-2.5 flex-row items-center gap-3 shadow-xs">
+                                    <View className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-200 items-center justify-center">
+                                        <GitPullRequest size={16} color="#D97706" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-slate-900 text-xs font-extrabold" numberOfLines={1}>
+                                            {p.candidate_name || 'Candidate'} — {p.stage_label || p.current_stage || 'In Progress'}
+                                        </Text>
+                                        <Text className="text-slate-500 text-[10px] font-semibold">
+                                            {p.employer_name || 'Employer'} • {p.target_country || 'International'} • {p.last_updated || 'Today'}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ))}
+
+                            {pipelines.length === 0 && (
+                                <View className="bg-white p-6 rounded-2xl border border-slate-200 items-center justify-center shadow-xs">
+                                    <GitPullRequest size={28} color="#94A3B8" />
+                                    <Text className="text-slate-900 text-sm font-bold mt-2">No Recent Activity</Text>
+                                    <Text className="text-slate-500 text-xs text-center mt-1">Deploy candidates to start tracking pipeline activity.</Text>
+                                </View>
+                            )}
+
+                            <View className="h-6" />
+                        </View>
+                    )}
+
                     {/* CANDIDATES TAB */}
                     {activeTab === 'candidates' && (
                         <View>
