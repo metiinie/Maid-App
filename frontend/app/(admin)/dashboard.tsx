@@ -159,6 +159,72 @@ export default function AdminDashboard() {
         },
     ];
 
+    const [selectedCountryFilter, setSelectedCountryFilter] = useState('ALL');
+    const [selectedVacancy, setSelectedVacancy] = useState<any>(null);
+
+    const sampleAdminVacancies = [
+        {
+            id: 'vac-admin-1',
+            order_code: 'DO-SA-101',
+            title: 'Housemaid & Arabic Cook',
+            employer_name: 'Al-Harbi Household',
+            target_country: 'Saudi Arabia',
+            target_city: 'Riyadh',
+            salary_monthly: '450',
+            headcount_total: 10,
+            headcount_filled: 6,
+            attestation_status: 'Attested by Embassy',
+            applications_count: 8,
+            contract_years: 2,
+            description: 'Seeking experienced Ethiopian housemaid fluent in Arabic cooking and household management for family of 5 in Riyadh.',
+        },
+        {
+            id: 'vac-admin-2',
+            order_code: 'DO-UAE-204',
+            title: 'Child Caregiver & Nanny',
+            employer_name: 'Al-Mansoori Residence',
+            target_country: 'UAE',
+            target_city: 'Dubai',
+            salary_monthly: '500',
+            headcount_total: 5,
+            headcount_filled: 3,
+            attestation_status: 'Attested by Embassy',
+            applications_count: 5,
+            contract_years: 2,
+            description: 'Private villa in Dubai seeking gentle Ethiopian nanny with infant care experience and basic English communication.',
+        },
+        {
+            id: 'vac-admin-3',
+            order_code: 'DO-KW-309',
+            title: 'Senior Housemaid & Cleaner',
+            employer_name: 'Al-Sabah Household',
+            target_country: 'Kuwait',
+            target_city: 'Kuwait City',
+            salary_monthly: '400',
+            headcount_total: 8,
+            headcount_filled: 2,
+            attestation_status: 'MOLSA Visa Issued',
+            applications_count: 6,
+            contract_years: 2,
+            description: 'Kuwaiti household needing energetic domestic worker experienced in laundry, ironing, and deep home cleaning.',
+        },
+        {
+            id: 'vac-admin-4',
+            order_code: 'DO-QA-412',
+            title: 'Elderly Caregiver Specialist',
+            employer_name: 'Al-Thani Residence',
+            target_country: 'Qatar',
+            target_city: 'Doha',
+            salary_monthly: '550',
+            headcount_total: 4,
+            headcount_filled: 4,
+            attestation_status: 'Completed / Filled',
+            applications_count: 12,
+            contract_years: 2,
+            description: 'Doha home requiring certified female Ethiopian caregiver for elderly matriarch.',
+        },
+    ];
+
     async function loadData() {
         setLoading(true);
         try {
@@ -170,13 +236,15 @@ export default function AdminDashboard() {
                 subscriptionService.getSubscriptionPlans(),
             ]);
             const fetchedCandidates = cRes.data || [];
+            const fetchedVacancies = vRes.data || [];
             setCandidates(fetchedCandidates.length > 0 ? fetchedCandidates : sampleAdminCandidates);
-            setVacancies(vRes.data || []);
+            setVacancies(fetchedVacancies.length > 0 ? fetchedVacancies : sampleAdminVacancies);
             setPipelines(pRes.data || []);
             setSubscription(sRes.data || null);
             setPlans(plRes.data || []);
         } catch (e) {
             setCandidates(sampleAdminCandidates);
+            setVacancies(sampleAdminVacancies);
         }
         setLoading(false);
     }
@@ -535,6 +603,27 @@ export default function AdminDashboard() {
                     {/* VACANCIES / DEMAND ORDERS TAB */}
                     {activeTab === 'vacancies' && (
                         <View>
+                            {/* Destination Country Filter Bar */}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3.5 flex-row">
+                                {['ALL', 'Saudi Arabia', 'UAE', 'Kuwait', 'Qatar'].map((cntry) => (
+                                    <Pressable
+                                        key={cntry}
+                                        onPress={() => setSelectedCountryFilter(cntry)}
+                                        className={`px-3.5 py-1.5 rounded-full mr-2 border ${selectedCountryFilter === cntry
+                                            ? 'bg-amber-500 border-amber-600'
+                                            : 'bg-white border-slate-200'
+                                            }`}
+                                    >
+                                        <Text
+                                            className={`text-[11px] font-extrabold ${selectedCountryFilter === cntry ? 'text-slate-950' : 'text-slate-700'
+                                                }`}
+                                        >
+                                            {cntry}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </ScrollView>
+
                             <Pressable
                                 onPress={() => setAddVacancyModal(true)}
                                 className="bg-amber-500 py-3.5 rounded-full items-center flex-row justify-center gap-2 mb-4 shadow-sm active:bg-amber-600"
@@ -543,31 +632,75 @@ export default function AdminDashboard() {
                                 <Text className="text-slate-950 text-xs font-black uppercase">Post New Demand Order</Text>
                             </Pressable>
 
-                            {vacancies.map((v: any) => (
-                                <View
-                                    key={v.id}
-                                    className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
-                                >
-                                    <View className="flex-row items-center justify-between mb-1">
-                                        <Text className="text-slate-900 text-sm font-extrabold flex-1 mr-2">{v.title}</Text>
-                                        <View className="bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                                            <Text className="text-amber-800 text-[10px] font-black">{v.target_country || 'Saudi Arabia'}</Text>
-                                        </View>
-                                    </View>
-                                    <Text className="text-emerald-700 text-xs font-bold mt-0.5">
-                                        Monthly Salary: ${v.salary_monthly || '450'} USD/mo
-                                    </Text>
-
-                                    <View className="flex-row items-center justify-between mt-3 pt-2 border-t border-slate-100">
-                                        <Text className="text-slate-500 text-[11px] font-medium">
-                                            Applications Received: <Text className="text-slate-900 font-bold">{v.applications_count || 3}</Text>
-                                        </Text>
-                                        <View className="bg-slate-100 px-2 py-0.5 rounded-md">
-                                            <Text className="text-slate-700 text-[10px] font-bold">MOLSA Approved</Text>
-                                        </View>
-                                    </View>
+                            {vacancies
+                                .filter((v) => selectedCountryFilter === 'ALL' || (v.target_country || '').toLowerCase().includes(selectedCountryFilter.toLowerCase()))
+                                .length === 0 ? (
+                                <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-2 shadow-xs">
+                                    <Briefcase size={32} color="#94A3B8" />
+                                    <Text className="text-slate-900 text-sm font-bold mt-2">No Demand Orders Found</Text>
+                                    <Text className="text-slate-500 text-xs text-center mt-1">Tap "Post New Demand Order" to publish B2B requests.</Text>
                                 </View>
-                            ))}
+                            ) : (
+                                vacancies
+                                    .filter((v) => selectedCountryFilter === 'ALL' || (v.target_country || '').toLowerCase().includes(selectedCountryFilter.toLowerCase()))
+                                    .map((v: any) => (
+                                        <View
+                                            key={v.id}
+                                            className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
+                                        >
+                                            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100">
+                                                <View className="flex-1 mr-2">
+                                                    <View className="flex-row items-center gap-2 mb-1">
+                                                        <View className="bg-slate-900 px-2 py-0.5 rounded-md">
+                                                            <Text className="text-amber-400 text-[10px] font-black">{v.order_code || 'DO-SA-101'}</Text>
+                                                        </View>
+                                                        <Text className="text-slate-900 text-sm font-black flex-1" numberOfLines={1}>
+                                                            {v.title}
+                                                        </Text>
+                                                    </View>
+                                                    <Text className="text-slate-600 text-xs font-extrabold">
+                                                        Employer: {v.employer_name || 'Al-Harbi Household'}
+                                                    </Text>
+                                                </View>
+
+                                                <View className="bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-full">
+                                                    <Text className="text-amber-900 text-[10px] font-black">
+                                                        {v.target_country || 'Saudi Arabia'} ({v.target_city || 'Riyadh'})
+                                                    </Text>
+                                                </View>
+                                            </View>
+
+                                            <View className="flex-row items-center justify-between py-2.5">
+                                                <View>
+                                                    <Text className="text-slate-400 text-[10px] font-semibold">Monthly Salary</Text>
+                                                    <Text className="text-emerald-700 text-sm font-extrabold">${v.salary_monthly || '450'} USD/mo</Text>
+                                                </View>
+
+                                                <View className="items-end">
+                                                    <Text className="text-slate-400 text-[10px] font-semibold">Quota / Headcount</Text>
+                                                    <Text className="text-slate-900 text-xs font-black">
+                                                        {v.headcount_filled || 6} / {v.headcount_total || 10} Filled
+                                                    </Text>
+                                                </View>
+                                            </View>
+
+                                            <View className="flex-row items-center justify-between pt-2.5 border-t border-slate-100">
+                                                <View className="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+                                                    <Text className="text-emerald-800 text-[10px] font-extrabold">
+                                                        {v.attestation_status || 'Attested by Embassy'}
+                                                    </Text>
+                                                </View>
+
+                                                <Pressable
+                                                    onPress={() => setSelectedVacancy(v)}
+                                                    className="bg-slate-900 px-3 py-1.5 rounded-xl flex-row items-center gap-1 active:opacity-90"
+                                                >
+                                                    <Text className="text-amber-400 text-xs font-black">Inspect Order →</Text>
+                                                </Pressable>
+                                            </View>
+                                        </View>
+                                    ))
+                            )}
                         </View>
                     )}
 
