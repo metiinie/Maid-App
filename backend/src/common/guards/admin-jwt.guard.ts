@@ -1,16 +1,38 @@
-import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class AdminJwtGuard extends AuthGuard('admin-jwt') {
-    canActivate(context: ExecutionContext) {
-        return super.canActivate(context);
-    }
+export class AdminJwtGuard implements CanActivate {
+    constructor(
+        private jwtService: JwtService,
+        private configService: ConfigService,
+    ) { }
 
-    handleRequest(err: any, admin: any) {
-        if (err || !admin) {
-            throw err || new UnauthorizedException('Invalid or expired admin token');
+    canActivate(context: ExecutionContext): boolean {
+        const request = context.switchToHttp().getRequest();
+        const authHeader = request.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            throw new UnauthorizedException('Missing or invalid authorization header');
         }
-        return admin;
+
+        const token = authHeader.split(' ')[1];
+        try {
+            const secret = this.configService.get<string>('JWT_SECRET') || 'supersecretkey123';
+            const payload = this.jwtService.verify(token, { secret });
+
+            // Reject non-admin tokens (e.g. candidate or employer user tokens)
+            if (payload.type === 'USER' && !payload.role && !payload.agencyId) {
+                throw new ForbiddenException('Access denied: Agency Admin credentials required');
+            }
+
+            request.user = payload;
+            request.admin = payload;
+            return true;
+        } catch (err) {
+            if (err instanceof ForbiddenException) throw err;
+            throw new UnauthorizedException('Invalid or expired admin token');
+        }
     }
 }
