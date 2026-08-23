@@ -201,4 +201,58 @@ export class AuthService {
             },
         };
     }
+
+    async registerUser(dto: {
+        phone: string;
+        password: string;
+        firstName: string;
+        lastName: string;
+        email?: string;
+        role?: string;
+    }) {
+        const existing = await this.prisma.user.findUnique({
+            where: { phone: dto.phone },
+        });
+
+        if (existing) {
+            throw new BadRequestException('Phone number is already registered');
+        }
+
+        const hashedPassword = await bcrypt.hash(dto.password, 12);
+        const mode = (dto.role === 'employer' || dto.role === 'EMPLOYER') ? 'EMPLOYER' : 'JOB_SEEKER';
+
+        await this.prisma.user.create({
+            data: {
+                phone: dto.phone,
+                password: hashedPassword,
+                firstName: dto.firstName,
+                lastName: dto.lastName,
+                email: dto.email || null,
+                preferredMode: mode as any,
+            },
+        });
+
+        return this.loginUser(dto.phone, dto.password);
+    }
+
+    async resetPin(dto: { phone: string; otp: string; newPin: string }) {
+        await this.verifyOtp(dto.phone, dto.otp);
+
+        const user = await this.prisma.user.findUnique({
+            where: { phone: dto.phone },
+        });
+
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        const hashedPassword = await bcrypt.hash(dto.newPin, 12);
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { password: hashedPassword },
+        });
+
+        return { success: true, message: 'PIN reset successfully' };
+    }
 }
