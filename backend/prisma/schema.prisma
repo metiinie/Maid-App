@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -96,9 +97,13 @@ model Organization {
   updatedAt        DateTime               @updatedAt @map("updated_at")
 
   members          OrganizationMember[]
+  adminUsers       AdminUser[]
   vacancies        JobVacancy[]
   candidates       Candidate[]
   hiringPipelines  HiringPipeline[]
+  conversations    Conversation[]
+  contactChannels  AgencyContactChannel[]
+  settings         AgencySetting?
 
   @@map("organizations")
 }
@@ -119,71 +124,46 @@ model OrganizationMember {
   @@map("organization_members")
 }
 
-model Agency {
-  id               String                 @id @default(uuid())
-  name             String
-  licenseNumber    String?                @map("license_number")
-  logoUrl          String?                @map("logo_url")
-  bannerUrl        String?                @map("banner_url")
-  phone            String?
-  email            String?
-  city             String?
-  address          String?
-  isActive         Boolean                @default(true) @map("is_active")
-  createdAt        DateTime               @default(now()) @map("created_at")
-  updatedAt        DateTime               @updatedAt @map("updated_at")
-
-  adminUsers       AdminUser[]
-  candidates       Candidate[]
-  vacancies        JobVacancy[]
-  hiringPipelines  HiringPipeline[]
-  conversations    Conversation[]
-  contactChannels  AgencyContactChannel[]
-  settings         AgencySetting?
-
-  @@map("agencies")
-}
-
 model AgencyContactChannel {
-  id           String   @id @default(uuid())
-  agencyId     String   @map("agency_id")
-  channelType  String   @map("channel_type") // whatsapp, telegram, imo, phone, email
-  channelValue String   @map("channel_value")
+  id           String       @id @default(uuid())
+  agencyId     String       @map("agency_id")
+  channelType  String       @map("channel_type") // whatsapp, telegram, imo, phone, email
+  channelValue String       @map("channel_value")
   label        String?
-  isPrimary    Boolean  @default(false) @map("is_primary")
-  createdAt    DateTime @default(now()) @map("created_at")
+  isPrimary    Boolean      @default(false) @map("is_primary")
+  createdAt    DateTime     @default(now()) @map("created_at")
 
-  agency       Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  agency       Organization @relation(fields: [agencyId], references: [id], onDelete: Cascade)
 
   @@map("agency_contact_channels")
 }
 
 model AgencySetting {
-  id                      String   @id @default(uuid())
-  agencyId                String   @unique @map("agency_id")
-  allowInAppApplications  Boolean  @default(true) @map("allow_in_app_applications")
-  showSalaryInVacancies   Boolean  @default(true) @map("show_salary_in_vacancies")
-  notifyAdminOnNewInquiry Boolean  @default(true) @map("notify_admin_on_new_inquiry")
-  updatedAt               DateTime @updatedAt @map("updated_at")
+  id                      String       @id @default(uuid())
+  agencyId                String       @unique @map("agency_id")
+  allowInAppApplications  Boolean      @default(true) @map("allow_in_app_applications")
+  showSalaryInVacancies   Boolean      @default(true) @map("show_salary_in_vacancies")
+  notifyAdminOnNewInquiry Boolean      @default(true) @map("notify_admin_on_new_inquiry")
+  updatedAt               DateTime     @updatedAt @map("updated_at")
 
-  agency                  Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  agency                  Organization @relation(fields: [agencyId], references: [id], onDelete: Cascade)
 
   @@map("agency_settings")
 }
 
 model AdminUser {
-  id        String   @id @default(uuid())
-  agencyId  String   @map("agency_id")
-  firstName String   @map("first_name")
-  lastName  String   @map("last_name")
-  email     String   @unique
+  id        String       @id @default(uuid())
+  agencyId  String       @map("agency_id")
+  firstName String       @map("first_name")
+  lastName  String       @map("last_name")
+  email     String       @unique
   password  String
-  role      Role     @default(ADMIN)
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  role      Role         @default(ADMIN)
+  isActive  Boolean      @default(true) @map("is_active")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
 
-  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  agency    Organization @relation(fields: [agencyId], references: [id], onDelete: Cascade)
 
   @@map("admin_users")
 }
@@ -328,9 +308,7 @@ model Candidate {
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
-  agency               Agency             @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  organizationId       String?            @map("organization_id")
-  organization         Organization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agency               Organization       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   category             Category           @relation(fields: [categoryId], references: [id])
   inquiries            CandidateInquiry[]
   hiringPipelines      HiringPipeline[]
@@ -338,18 +316,21 @@ model Candidate {
   documents            CandidateDocument[]
   views                CandidateView[]
 
+  @@index([agencyId, isAvailable])
+  @@index([medicalStatus, categoryId, currentCountry])
   @@map("candidates")
 }
 
 model CandidateDocument {
-  id           String    @id @default(uuid())
-  candidateId  String    @map("candidate_id")
-  documentType String    @map("document_type") // passport, medical, coc, contract
-  fileUrl      String    @map("file_url")
-  expiryDate   DateTime? @map("expiry_date")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id                 String    @id @default(uuid())
+  candidateId        String    @map("candidate_id")
+  documentType       String    @map("document_type") // passport, medical, coc, contract
+  fileUrl            String    @map("file_url")
+  verificationStatus String    @default("pending") @map("verification_status") // pending | verified | rejected | expired
+  expiryDate         DateTime? @map("expiry_date")
+  createdAt          DateTime  @default(now()) @map("created_at")
 
-  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate          Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
   @@map("candidate_documents")
 }
@@ -403,14 +384,14 @@ model JobVacancy {
   createdAt             DateTime      @default(now()) @map("created_at")
   updatedAt             DateTime      @updatedAt @map("updated_at")
 
-  agency                Agency        @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  organizationId        String?       @map("organization_id")
-  organization          Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agency                Organization  @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   category              Category      @relation(fields: [categoryId], references: [id])
   applications          Application[]
   savedVacancies        SavedVacancy[]
   views                 VacancyView[]
 
+  @@index([agencyId, status])
+  @@index([status, categoryId, country])
   @@map("job_vacancies")
 }
 
@@ -442,6 +423,8 @@ model Application {
   vacancy         JobVacancy        @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, status])
+  @@index([vacancyId, status])
   @@map("applications")
 }
 
@@ -461,6 +444,8 @@ model CandidateInquiry {
   candidate               Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, status])
+  @@index([candidateId, status])
   @@map("candidate_inquiries")
 }
 
@@ -516,13 +501,12 @@ model HiringPipeline {
   createdAt              DateTime               @default(now()) @map("created_at")
   updatedAt              DateTime               @updatedAt @map("updated_at")
 
-  agency                 Agency                 @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  organizationId         String?                @map("organization_id")
-  organization           Organization?          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agency                 Organization           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   candidate              Candidate              @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   stageHistory           PipelineStageHistory[]
   pipelineDocuments      PipelineDocument[]
 
+  @@index([agencyId, currentStage])
   @@map("hiring_pipelines")
 }
 
@@ -559,16 +543,17 @@ model PipelineDocument {
 // ------------------------------------------------------
 
 model Conversation {
-  id        String    @id @default(uuid())
-  agencyId  String    @map("agency_id")
-  userId    String    @map("user_id")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  id        String       @id @default(uuid())
+  agencyId  String       @map("agency_id")
+  userId    String       @map("user_id")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
 
-  agency    Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agency    Organization @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages  Message[]
 
+  @@index([agencyId, userId])
   @@map("conversations")
 }
 

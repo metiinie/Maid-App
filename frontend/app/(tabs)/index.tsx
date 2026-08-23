@@ -8,6 +8,7 @@ import {
     Briefcase,
     Globe,
     Lock,
+    X,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { RoleToggle } from '../../components/RoleToggle';
@@ -102,6 +103,8 @@ export default function HomeScreen() {
     const [selectedCandidate, setSelectedCandidate] = useState<CandidateProps | null>(null);
     const [inquiryModalVisible, setInquiryModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showModeBanner, setShowModeBanner] = useState(true);
+    const [showGuestBanner, setShowGuestBanner] = useState(true);
 
     const isAuthenticated = !!user || !!admin;
 
@@ -152,49 +155,62 @@ export default function HomeScreen() {
                 </View>
             </View>
 
-            {/* Context Mode Banner */}
-            <View
-                className={`px-5 py-2 flex-row items-center justify-between ${mode === 'employer' ? 'bg-slate-900 border-b border-slate-800' : 'bg-amber-100 border-b border-amber-200'
-                    }`}
-            >
-                <View className="flex-row items-center gap-2">
-                    {mode === 'employer' ? (
-                        <Building2 size={15} color="#F59E0B" />
-                    ) : (
-                        <Briefcase size={15} color="#D97706" />
-                    )}
-                    <Text
-                        className={`text-xs font-extrabold ${mode === 'employer' ? 'text-white' : 'text-amber-950'
-                            }`}
-                    >
-                        {mode === 'employer'
-                            ? 'Employer Mode — Cleared Talent'
-                            : 'Job Seeker Mode — Overseas Jobs'}
-                    </Text>
-                </View>
-                <Pressable onPress={() => router.push('/(tabs)/profile')} className="bg-white/20 px-2 py-0.5 rounded-md">
-                    <Text
-                        className={`text-[10px] font-bold ${mode === 'employer' ? 'text-amber-400' : 'text-amber-900'
-                            }`}
-                    >
-                        Switch Role →
-                    </Text>
-                </Pressable>
-            </View>
+            {/* Context Mode Banner (Dismissable) */}
+            {showModeBanner && (
+                <View
+                    className={`px-5 py-2 flex-row items-center justify-between ${mode === 'employer' ? 'bg-slate-900 border-b border-slate-800' : 'bg-amber-100 border-b border-amber-200'
+                        }`}
+                >
+                    <View className="flex-row items-center gap-2 flex-1 mr-2">
+                        {mode === 'employer' ? (
+                            <Building2 size={15} color="#F59E0B" />
+                        ) : (
+                            <Briefcase size={15} color="#D97706" />
+                        )}
+                        <Text
+                            className={`text-xs font-extrabold ${mode === 'employer' ? 'text-white' : 'text-amber-950'
+                                }`}
+                        >
+                            {mode === 'employer'
+                                ? 'Employer Mode — Cleared Talent'
+                                : 'Job Seeker Mode — Overseas Jobs'}
+                        </Text>
+                    </View>
 
-            {/* Unauthenticated Guest Sign-In Banner */}
-            {!isAuthenticated && (
-                <View className="bg-amber-500 px-5 py-3 flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-2">
+                        <Pressable onPress={() => router.push('/(tabs)/profile')} className="bg-white/20 px-2 py-0.5 rounded-md">
+                            <Text
+                                className={`text-[10px] font-bold ${mode === 'employer' ? 'text-amber-400' : 'text-amber-900'
+                                    }`}
+                            >
+                                Switch Role →
+                            </Text>
+                        </Pressable>
+                        <Pressable onPress={() => setShowModeBanner(false)} className="p-1">
+                            <X size={14} color={mode === 'employer' ? '#94A3B8' : '#92400E'} />
+                        </Pressable>
+                    </View>
+                </View>
+            )}
+
+            {/* Unauthenticated Guest Sign-In Banner (Dismissable) */}
+            {!isAuthenticated && showGuestBanner && (
+                <View className="bg-amber-500 px-5 py-2.5 flex-row items-center justify-between">
                     <View className="flex-1 mr-2">
                         <Text className="text-slate-950 text-xs font-black">Sign in to contact agencies & apply</Text>
                         <Text className="text-slate-900 text-[10px] font-semibold">Access verified candidate videos & job demand orders</Text>
                     </View>
-                    <Pressable
-                        onPress={() => router.push('/(auth)/login')}
-                        className="bg-slate-900 px-3.5 py-1.5 rounded-full"
-                    >
-                        <Text className="text-amber-400 text-xs font-black">Sign In</Text>
-                    </Pressable>
+                    <View className="flex-row items-center gap-2">
+                        <Pressable
+                            onPress={() => router.push('/(auth)/login')}
+                            className="bg-slate-900 px-3 py-1.5 rounded-full"
+                        >
+                            <Text className="text-amber-400 text-xs font-black">Sign In</Text>
+                        </Pressable>
+                        <Pressable onPress={() => setShowGuestBanner(false)} className="p-1">
+                            <X size={16} color="#0F172A" />
+                        </Pressable>
+                    </View>
                 </View>
             )}
 
