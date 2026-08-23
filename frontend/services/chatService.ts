@@ -10,18 +10,26 @@ export const chatService = {
     getMessages: (conversationId: string, isAdmin = false) =>
         api.get(isAdmin ? `/admin/conversations/${conversationId}/messages` : `/conversations/${conversationId}/messages`),
 
-    sendUserMessage: (conversationId: string, formData: FormData) =>
-        api.post(`/conversations/${conversationId}/messages`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        }),
+    sendUserMessage: (conversationId: string, payload: { text: string; attachmentUrl?: string } | FormData) => {
+        if (payload instanceof FormData) {
+            return api.post(`/conversations/${conversationId}/messages`, payload, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+        }
+        return api.post(`/conversations/${conversationId}/messages`, payload);
+    },
 
     getAdminConversations: () =>
         api.get('/admin/conversations'),
 
-    sendAdminMessage: (conversationId: string, formData: FormData) =>
-        api.post(`/admin/conversations/${conversationId}/messages`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        }),
+    sendAdminMessage: (conversationId: string, payload: { text: string; attachmentUrl?: string } | FormData) => {
+        if (payload instanceof FormData) {
+            return api.post(`/admin/conversations/${conversationId}/messages`, payload, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+        }
+        return api.post(`/admin/conversations/${conversationId}/messages`, payload);
+    },
 
     getNotifications: () =>
         api.get('/notifications'),
@@ -35,3 +43,4 @@ export const chatService = {
     markAllNotificationsRead: () =>
         api.patch('/notifications/read-all'),
 };
+
