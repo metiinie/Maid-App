@@ -7,6 +7,9 @@ import {
     Pressable,
     ActivityIndicator,
     RefreshControl,
+    Modal,
+    Alert,
+    TouchableOpacity,
 } from 'react-native';
 import {
     Search,
@@ -18,18 +21,24 @@ import {
     ChevronRight,
     Star,
     X,
+    Briefcase,
+    CheckCircle2,
+    Calendar,
+    DollarSign,
+    MapPin,
 } from 'lucide-react-native';
 import { candidateService } from '../../services/candidateService';
 import { bookmarkService } from '../../services/bookmarkService';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { InquiryModal } from '../../components/InquiryModal';
 
 export default function CandidatesScreen() {
-    const { user } = useAuth();
+    const { activeWorkspace, user } = useAuth();
     const router = useRouter();
     const { openChatWithAgency } = useChat();
+
+    const isEmployer = activeWorkspace?.type === 'GULF_EMPLOYER';
 
     const [candidates, setCandidates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -37,8 +46,14 @@ export default function CandidatesScreen() {
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState('ALL');
     const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
-    const [inquiryModalVisible, setInquiryModalVisible] = useState(false);
     const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+
+    // Hiring / Interview Request Modal
+    const [showHireModal, setShowHireModal] = useState(false);
+    const [candidateForHire, setCandidateForHire] = useState<any>(null);
+    const [hireCity, setHireCity] = useState('Riyadh, Saudi Arabia');
+    const [hireSalary, setHireSalary] = useState('1,500 SAR ($400 USD)');
+    const [hireStartDate, setHireStartDate] = useState('Immediate / Next Flight');
 
     const filters = [
         { id: 'ALL', label: 'All Candidates' },
@@ -46,6 +61,8 @@ export default function CandidatesScreen() {
         { id: 'FIRST_TIMER', label: 'First Timer' },
         { id: 'COOKING', label: 'Arabic Cooking' },
         { id: 'GAMCA', label: 'GAMCA Cleared' },
+        { id: 'NANNY', label: 'Nannies & Childcare' },
+        { id: 'CAREGIVER', label: 'Elderly Care' },
     ];
 
     useFocusEffect(
@@ -100,7 +117,8 @@ export default function CandidatesScreen() {
                         gamcaCleared: true,
                         exGulf: true,
                         hasVideoIntro: true,
-                        agency_name: 'Al-Habesha Overseas Agency',
+                        agency_id: 'agency-1',
+                        agency_name: 'Ethio-Gulf Overseas Manpower Agency',
                         skillTags: ['Arabic Cooking (Kabsa/Mandi)', 'Infant Care', 'Housekeeping'],
                     },
                     {
@@ -117,7 +135,8 @@ export default function CandidatesScreen() {
                         gamcaCleared: true,
                         exGulf: false,
                         hasVideoIntro: true,
-                        agency_name: 'Ethio-Gulf Manpower Agency',
+                        agency_id: 'agency-2',
+                        agency_name: 'Blue Nile Foreign Employment Enterprise',
                         skillTags: ['Baby Care (0-3 yrs)', 'First Aid', 'English Basic'],
                     },
                     {
@@ -134,7 +153,8 @@ export default function CandidatesScreen() {
                         gamcaCleared: true,
                         exGulf: true,
                         hasVideoIntro: true,
-                        agency_name: 'Addis Overseas Recruitment',
+                        agency_id: 'agency-3',
+                        agency_name: 'Addis Overseas Recruitment Agency',
                         skillTags: ['Elderly Assistance', 'Patient Care', 'Arabic Fluent'],
                     },
                 ]);
@@ -172,13 +192,21 @@ export default function CandidatesScreen() {
         }
     };
 
-    const handleInquireAgency = (candidate: any) => {
-        openChatWithAgency(
-            candidate.agency_id || 'ag-1',
-            candidate.agency_name || 'Verified Ethiopian Manpower Agency',
-            'candidate_inquiry',
-            candidate.id
+    const handleOpenHireModal = (candidate: any) => {
+        setCandidateForHire(candidate);
+        setShowHireModal(true);
+    };
+
+    const handleConfirmHireRequest = () => {
+        if (!candidateForHire) return;
+        Alert.alert(
+            'Hiring Request Sent!',
+            `Your recruitment inquiry for Candidate ${candidateForHire.code || candidateForHire.first_name} has been sent to ${candidateForHire.agency_name}.`
         );
+        const cand = candidateForHire;
+        setShowHireModal(false);
+        setCandidateForHire(null);
+        openChatWithAgency(cand.agency_id || 'agency-1', cand.agency_name || 'Agency Support', 'candidate_inquiry', cand.id);
     };
 
     // Client-side search & chip filter fallback
@@ -195,6 +223,10 @@ export default function CandidatesScreen() {
         if (activeFilter === 'COOKING')
             matchesChip = c.skillTags?.some((s: string) => s.toLowerCase().includes('cook'));
         if (activeFilter === 'GAMCA') matchesChip = c.gamcaCleared;
+        if (activeFilter === 'NANNY')
+            matchesChip = (c.category_name || '').toLowerCase().includes('nanny') || c.skillTags?.some((s: string) => s.toLowerCase().includes('baby'));
+        if (activeFilter === 'CAREGIVER')
+            matchesChip = (c.category_name || '').toLowerCase().includes('caregiver') || c.skillTags?.some((s: string) => s.toLowerCase().includes('elderly'));
 
         return matchesQuery && matchesChip;
     });
@@ -204,10 +236,12 @@ export default function CandidatesScreen() {
             {/* Header */}
             <View className="px-5 pt-14 pb-4 bg-slate-900 shadow-md">
                 <View className="flex-row items-center justify-between">
-                    <View>
-                        <Text className="text-white text-xl font-extrabold">Candidate Directory</Text>
+                    <View className="flex-1 mr-2">
+                        <Text className="text-white text-xl font-extrabold">
+                            {isEmployer ? 'Talent Search Hub' : 'Candidate Directory'}
+                        </Text>
                         <Text className="text-slate-400 text-xs mt-0.5 font-medium">
-                            Verified Ethiopian domestic workers & specialists
+                            Verified Ethiopian domestic workers & skilled personnel
                         </Text>
                     </View>
                     <View className="bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 rounded-full flex-row items-center">
@@ -219,12 +253,12 @@ export default function CandidatesScreen() {
 
             {/* Search & Filter Bar */}
             <View className="px-5 my-4">
-                <View className="flex-row items-center bg-white border border-slate-200 rounded-full px-4 py-1 shadow-xs mb-3">
+                <View className="flex-row items-center bg-white border border-slate-200 rounded-2xl px-4 py-1 shadow-xs mb-3">
                     <Search size={16} color="#64748B" />
                     <TextInput
                         value={search}
                         onChangeText={setSearch}
-                        placeholder="Search candidate code (e.g. ET-8492), skill..."
+                        placeholder="Search reference code (e.g. ET-8492), skills..."
                         placeholderTextColor="#94A3B8"
                         className="flex-1 text-slate-900 text-xs ml-2.5 py-3 font-medium"
                     />
@@ -238,7 +272,7 @@ export default function CandidatesScreen() {
                 {/* Multi-Parametric Filter Chips */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-2">
                     {filters.map((f) => (
-                        <Pressable
+                        <TouchableOpacity
                             key={f.id}
                             onPress={() => setActiveFilter(f.id)}
                             className={`px-3.5 py-2 rounded-full border ${activeFilter === f.id
@@ -252,7 +286,7 @@ export default function CandidatesScreen() {
                             >
                                 {f.label}
                             </Text>
-                        </Pressable>
+                        </TouchableOpacity>
                     ))}
                 </ScrollView>
             </View>
@@ -341,24 +375,35 @@ export default function CandidatesScreen() {
                                         ))}
                                     </View>
 
+                                    {/* Managing Agency Banner */}
+                                    <View className="mt-2.5 pt-2 border-t border-slate-100 flex-row items-center justify-between">
+                                        <Text className="text-slate-400 text-[10px] font-bold">Managed by:</Text>
+                                        <Text className="text-slate-700 text-[11px] font-extrabold">{cand.agency_name}</Text>
+                                    </View>
+
                                     {/* Action Footer */}
                                     <View className="flex-row items-center gap-2 mt-3 pt-2 border-t border-slate-100">
                                         <Pressable
-                                            onPress={() => {
-                                                setSelectedCandidate(cand);
-                                                setInquiryModalVisible(true);
-                                            }}
-                                            className="flex-1 bg-slate-900 py-2 rounded-xl items-center justify-center flex-row gap-1"
+                                            onPress={() => handleOpenHireModal(cand)}
+                                            className="flex-1 bg-slate-900 py-2.5 rounded-xl items-center justify-center flex-row gap-1 active:opacity-90 shadow-xs"
                                         >
-                                            <Text className="text-amber-400 text-xs font-bold">Quick Inquiry</Text>
+                                            <Briefcase size={14} color="#F59E0B" />
+                                            <Text className="text-amber-400 text-xs font-black">Request Selection</Text>
                                         </Pressable>
 
                                         <Pressable
-                                            onPress={() => handleInquireAgency(cand)}
-                                            className="flex-1 bg-emerald-600 py-2 rounded-xl items-center justify-center flex-row gap-1"
+                                            onPress={() =>
+                                                openChatWithAgency(
+                                                    cand.agency_id || 'agency-1',
+                                                    cand.agency_name || 'Agency Support',
+                                                    'candidate_inquiry',
+                                                    cand.id
+                                                )
+                                            }
+                                            className="flex-1 bg-emerald-600 py-2.5 rounded-xl items-center justify-center flex-row gap-1 active:opacity-90 shadow-xs"
                                         >
-                                            <MessageSquare size={13} color="#FFFFFF" />
-                                            <Text className="text-white text-xs font-bold">Chat Agency</Text>
+                                            <MessageSquare size={14} color="#FFFFFF" />
+                                            <Text className="text-white text-xs font-extrabold">Chat Agency</Text>
                                         </Pressable>
                                     </View>
                                 </View>
@@ -369,14 +414,67 @@ export default function CandidatesScreen() {
                 </ScrollView>
             )}
 
-            {/* Inquiry Modal */}
-            <InquiryModal
-                visible={inquiryModalVisible}
-                candidate={selectedCandidate}
-                onClose={() => setInquiryModalVisible(false)}
-                onSuccess={() => { }}
-            />
+            {/* Request Candidate Selection Modal */}
+            <Modal visible={showHireModal} animationType="slide" transparent>
+                <View className="flex-1 bg-black/60 justify-center items-center p-5">
+                    <View className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm shadow-xl">
+                        <View className="flex-row items-center justify-between mb-2">
+                            <Text className="text-slate-900 text-lg font-extrabold">Select Candidate</Text>
+                            <Pressable onPress={() => setShowHireModal(false)} className="p-1 rounded-full bg-slate-100">
+                                <X size={18} color="#64748B" />
+                            </Pressable>
+                        </View>
+                        <Text className="text-emerald-700 text-xs font-bold mb-3">
+                            Ref Code: {candidateForHire?.code || candidateForHire?.id} ({candidateForHire?.category_name})
+                        </Text>
+                        <Text className="text-slate-500 text-xs mb-4 font-medium">
+                            Submit formal selection request to {candidateForHire?.agency_name} for interview & visa processing.
+                        </Text>
+
+                        <Text className="text-slate-700 text-xs font-bold mb-1">Target Destination City</Text>
+                        <TextInput
+                            value={hireCity}
+                            onChangeText={setHireCity}
+                            placeholder="Riyadh, Saudi Arabia"
+                            placeholderTextColor="#94A3B8"
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-medium mb-3"
+                        />
+
+                        <Text className="text-slate-700 text-xs font-bold mb-1">Monthly Salary Offer</Text>
+                        <TextInput
+                            value={hireSalary}
+                            onChangeText={setHireSalary}
+                            placeholder="1,500 SAR ($400 USD)"
+                            placeholderTextColor="#94A3B8"
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-medium mb-3"
+                        />
+
+                        <Text className="text-slate-700 text-xs font-bold mb-1">Target Start Date</Text>
+                        <TextInput
+                            value={hireStartDate}
+                            onChangeText={setHireStartDate}
+                            placeholder="Immediate / Next Flight"
+                            placeholderTextColor="#94A3B8"
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-medium mb-4"
+                        />
+
+                        <View className="flex-row gap-2">
+                            <Pressable
+                                onPress={() => setShowHireModal(false)}
+                                className="flex-1 bg-slate-100 border border-slate-200 py-3 rounded-xl items-center"
+                            >
+                                <Text className="text-slate-700 text-xs font-bold">Cancel</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={handleConfirmHireRequest}
+                                className="flex-1 bg-amber-500 py-3 rounded-xl items-center active:opacity-90 shadow-xs"
+                            >
+                                <Text className="text-slate-950 text-xs font-black">Confirm & Chat</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
-
