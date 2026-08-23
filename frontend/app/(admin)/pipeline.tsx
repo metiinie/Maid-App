@@ -5,14 +5,18 @@ import { ArrowLeft, User, MapPin, ArrowRight, Clock, ShieldCheck, FileCheck, Awa
 
 export default function AdminPipelineScreen() {
     const router = useRouter();
-    const [selectedStage, setSelectedStage] = useState<string>('SELECTION_CONTRACT');
+    const [selectedStage, setSelectedStage] = useState<string>('APPLIED');
 
     const stages = [
-        { key: 'SELECTION_CONTRACT', label: '1. Selection & Contract', count: 4, icon: Award },
-        { key: 'GAMCA_MEDICAL_PCC', label: '2. GAMCA & PCC', count: 6, icon: ShieldCheck },
-        { key: 'MOLSA_PERMIT', label: '3. MOLSA Permit', count: 8, icon: FileCheck },
-        { key: 'ENJAZ_VISA_TRAINING', label: '4. Enjaz Visa & Training', count: 3, icon: Clock },
-        { key: 'FLIGHT_DEPLOYED', label: '5. Flight & Deployed', count: 24, icon: Plane },
+        { key: 'APPLIED', label: '1. Applied', count: 5, icon: Award },
+        { key: 'UNDER_REVIEW', label: '2. Under Review', count: 4, icon: ShieldCheck },
+        { key: 'SHORTLISTED', label: '3. Shortlisted', count: 6, icon: FileCheck },
+        { key: 'SENT_TO_EMPLOYER', label: '4. Sent to Employer', count: 3, icon: Clock },
+        { key: 'EMPLOYER_REVIEW', label: '5. Employer Review', count: 4, icon: User },
+        { key: 'INTERVIEW', label: '6. Interview', count: 2, icon: Clock },
+        { key: 'SELECTED', label: '7. Selected', count: 5, icon: Award },
+        { key: 'DOCUMENTATION', label: '8. Documentation & Visa', count: 7, icon: FileCheck },
+        { key: 'DEPLOYED', label: '9. Deployed Overseas', count: 32, icon: Plane },
     ];
 
     const candidatePipelines = [
@@ -23,7 +27,7 @@ export default function AdminPipelineScreen() {
             employerName: 'Al-Harbi Family',
             employerCountry: 'Saudi Arabia',
             employerCity: 'Riyadh',
-            currentStage: 'GAMCA_MEDICAL_PCC',
+            currentStage: 'UNDER_REVIEW',
             enteredStageDays: 5,
             molsaLicense: 'MOLSA-ETH-2024-089',
             photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200',
@@ -35,7 +39,7 @@ export default function AdminPipelineScreen() {
             employerName: 'Al-Otaibi Family',
             employerCountry: 'Saudi Arabia',
             employerCity: 'Jeddah',
-            currentStage: 'MOLSA_PERMIT',
+            currentStage: 'DOCUMENTATION',
             enteredStageDays: 12,
             molsaLicense: 'MOLSA-ETH-2024-089',
             photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
@@ -47,7 +51,7 @@ export default function AdminPipelineScreen() {
             employerName: 'Al-Sabah Household',
             employerCountry: 'Kuwait',
             employerCity: 'Kuwait City',
-            currentStage: 'SELECTION_CONTRACT',
+            currentStage: 'APPLIED',
             enteredStageDays: 2,
             molsaLicense: 'MOLSA-ETH-2024-089',
             photoUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=200',
@@ -78,7 +82,7 @@ export default function AdminPipelineScreen() {
                 </TouchableOpacity>
                 <View className="items-center">
                     <Text className="text-base font-extrabold text-slate-900">Government ATS Pipeline</Text>
-                    <Text className="text-[10px] text-emerald-700 font-bold">5-Stage Legal Milestone Tracker</Text>
+                    <Text className="text-[10px] text-emerald-700 font-bold">9-Stage Legal Milestone Tracker</Text>
                 </View>
                 <View className="w-8" />
             </View>
@@ -91,8 +95,8 @@ export default function AdminPipelineScreen() {
                             key={s.key}
                             onPress={() => setSelectedStage(s.key)}
                             className={`px-3.5 py-2.5 rounded-xl mr-2 flex-row items-center border ${selectedStage === s.key
-                                    ? 'bg-emerald-600 border-emerald-700 shadow-xs'
-                                    : 'bg-slate-100 border-slate-200'
+                                ? 'bg-emerald-600 border-emerald-700 shadow-xs'
+                                : 'bg-slate-100 border-slate-200'
                                 }`}
                         >
                             <s.icon size={14} color={selectedStage === s.key ? '#FFFFFF' : '#64748B'} className="mr-1.5" />
