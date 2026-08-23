@@ -43,8 +43,8 @@ export default function RegisterScreen() {
                 last_name: lastName,
                 role,
             });
-            Alert.alert('Success', 'Registration complete. Please sign in.', [
-                { text: 'OK', onPress: () => router.replace('/(auth)/login') },
+            Alert.alert('Success', 'Registration complete.', [
+                { text: 'Choose Role', onPress: () => router.replace('/(auth)/mode-select') },
             ]);
         } catch (err: any) {
             Alert.alert('Error', err.message || 'Registration failed.');

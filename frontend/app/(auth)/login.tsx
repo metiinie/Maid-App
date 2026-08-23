@@ -24,7 +24,7 @@ export default function LoginScreen() {
             } else {
                 await loginUser(phone, password);
                 Alert.alert('Welcome!', 'Logged in successfully.');
-                router.replace('/(user)/dashboard');
+                router.replace('/(auth)/mode-select');
             }
         } catch (err: any) {
             Alert.alert('Login Failed', err.message || 'Please check credentials.');

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, Users, Briefcase, Bookmark, MessageSquare, Bell, GitPullRequest, Building2, ShieldCheck } from 'lucide-react-native';
+import { Home, Users, Briefcase, Bookmark, MessageSquare, Bell, GitPullRequest, Building2, ShieldCheck, User } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 
 export default function TabsLayout() {
@@ -32,6 +32,7 @@ export default function TabsLayout() {
                     saved: 'Pipeline',
                     messages: 'Messages',
                     alerts: 'Alerts',
+                    profile: 'Profile',
                 };
             case 'GULF_EMPLOYER':
                 return {
@@ -41,6 +42,7 @@ export default function TabsLayout() {
                     saved: 'Shortlist',
                     messages: 'Chat',
                     alerts: 'Alerts',
+                    profile: 'Profile',
                 };
             case 'PLATFORM_ADMIN':
                 return {
@@ -50,6 +52,7 @@ export default function TabsLayout() {
                     saved: 'Agencies',
                     messages: 'Support',
                     alerts: 'Audits',
+                    profile: 'Profile',
                 };
             default:
                 return {
@@ -59,6 +62,7 @@ export default function TabsLayout() {
                     saved: 'Saved',
                     messages: 'Messages',
                     alerts: 'Alerts',
+                    profile: 'Profile',
                 };
         }
     };
@@ -140,6 +144,14 @@ export default function TabsLayout() {
                     tabBarIcon: ({ color, size }) => <Bell size={size} color={color} />,
                 }}
             />
+            <Tabs.Screen
+                name="profile"
+                options={{
+                    title: titles.profile,
+                    tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+                }}
+            />
         </Tabs>
     );
 }
+
