@@ -32,8 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [admin, setAdmin] = useState<any>(null);
     const [workspaces, setWorkspaces] = useState<Workspace[]>([
         { id: 'personal', type: 'PERSONAL', name: 'Personal CV & Job Seeker', role: 'JOB_SEEKER' },
-        { id: 'agency-1', type: 'AGENCY', name: 'Addis Overseas Agency', role: 'RECRUITER', isVerified: true },
-        { id: 'employer-1', type: 'GULF_EMPLOYER', name: 'Riyadh Hospitality Group', role: 'HIRING_MANAGER', isVerified: true },
+        { id: 'employer-1', type: 'GULF_EMPLOYER', name: 'Gulf Employer Account', role: 'HIRING_MANAGER', isVerified: true },
     ]);
     const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>({
         id: 'personal',

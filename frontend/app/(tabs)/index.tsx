@@ -95,7 +95,7 @@ const sampleVacancies: VacancyProps[] = [
 
 export default function HomeScreen() {
     const router = useRouter();
-    const { user, admin, activeWorkspace } = useAuth();
+    const { user, admin, activeWorkspace, switchWorkspace, workspaces } = useAuth();
 
     // Mode is derived from active workspace or defaults to employer
     const mode = activeWorkspace?.type === 'GULF_EMPLOYER' ? 'employer' : 'seeker';
@@ -155,39 +155,51 @@ export default function HomeScreen() {
                 </View>
             </View>
 
-            {/* Context Mode Banner (Dismissable) */}
+            {/* Context Mode Banner (Dismissable & Interactive 1-Tap Quick Switch) */}
             {showModeBanner && (
                 <View
-                    className={`px-5 py-2 flex-row items-center justify-between ${mode === 'employer' ? 'bg-slate-900 border-b border-slate-800' : 'bg-amber-100 border-b border-amber-200'
+                    className={`px-5 py-2.5 flex-row items-center justify-between shadow-xs ${mode === 'employer' ? 'bg-slate-900 border-b border-slate-800' : 'bg-amber-500 border-b border-amber-600'
                         }`}
                 >
                     <View className="flex-row items-center gap-2 flex-1 mr-2">
                         {mode === 'employer' ? (
-                            <Building2 size={15} color="#F59E0B" />
+                            <Building2 size={16} color="#F59E0B" />
                         ) : (
-                            <Briefcase size={15} color="#D97706" />
+                            <Briefcase size={16} color="#0F172A" />
                         )}
-                        <Text
-                            className={`text-xs font-extrabold ${mode === 'employer' ? 'text-white' : 'text-amber-950'
-                                }`}
-                        >
-                            {mode === 'employer'
-                                ? 'Employer Mode — Cleared Talent'
-                                : 'Job Seeker Mode — Overseas Jobs'}
-                        </Text>
+                        <View className="flex-1">
+                            <Text
+                                className={`text-xs font-black ${mode === 'employer' ? 'text-white' : 'text-slate-950'
+                                    }`}
+                            >
+                                {mode === 'employer'
+                                    ? 'Employer UI — Switch to Job Seeker UI?'
+                                    : 'Job Seeker UI — Switch to Employer UI?'}
+                            </Text>
+                        </View>
                     </View>
 
                     <View className="flex-row items-center gap-2">
-                        <Pressable onPress={() => router.push('/(tabs)/profile')} className="bg-white/20 px-2 py-0.5 rounded-md">
+                        <Pressable
+                            onPress={async () => {
+                                const targetType = mode === 'employer' ? 'PERSONAL' : 'GULF_EMPLOYER';
+                                const target = workspaces.find((w) => w.type === targetType) || workspaces[0];
+                                if (target) {
+                                    await switchWorkspace(target.id);
+                                }
+                            }}
+                            className={`px-3 py-1.5 rounded-full shadow-xs ${mode === 'employer' ? 'bg-amber-500' : 'bg-slate-900'
+                                }`}
+                        >
                             <Text
-                                className={`text-[10px] font-bold ${mode === 'employer' ? 'text-amber-400' : 'text-amber-900'
+                                className={`text-[11px] font-black uppercase ${mode === 'employer' ? 'text-slate-950' : 'text-amber-400'
                                     }`}
                             >
-                                Switch Role →
+                                {mode === 'employer' ? 'Switch to Job Seeker →' : 'Switch to Employer →'}
                             </Text>
                         </Pressable>
                         <Pressable onPress={() => setShowModeBanner(false)} className="p-1">
-                            <X size={14} color={mode === 'employer' ? '#94A3B8' : '#92400E'} />
+                            <X size={15} color={mode === 'employer' ? '#94A3B8' : '#0F172A'} />
                         </Pressable>
                     </View>
                 </View>

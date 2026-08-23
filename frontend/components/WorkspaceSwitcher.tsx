@@ -4,8 +4,12 @@ import { User, Briefcase, Building, ShieldCheck, Grid, ChevronDown, X, CheckCirc
 import { useAuth, Workspace } from '../context/AuthContext';
 
 export function WorkspaceSwitcher() {
-    const { workspaces, activeWorkspace, switchWorkspace } = useAuth();
+    const { workspaces, activeWorkspace, switchWorkspace, admin } = useAuth();
     const [visible, setVisible] = useState(false);
+
+    const visibleWorkspaces = workspaces.filter(
+        (ws: Workspace) => admin || (ws.type !== 'AGENCY' && ws.type !== 'PLATFORM_ADMIN')
+    );
 
     const renderIcon = (type: string, color = '#059669', size = 18) => {
         switch (type) {
@@ -66,7 +70,7 @@ export function WorkspaceSwitcher() {
                         </View>
 
                         <ScrollView className="max-h-72">
-                            {workspaces.map((ws: Workspace) => {
+                            {visibleWorkspaces.map((ws: Workspace) => {
                                 const isSelected = activeWorkspace?.id === ws.id;
                                 return (
                                     <TouchableOpacity
