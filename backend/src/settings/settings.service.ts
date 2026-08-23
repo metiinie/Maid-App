@@ -18,7 +18,7 @@ export class SettingsService {
             orderBy: { isPrimary: 'desc' },
         });
 
-        const agency = await this.prisma.agency.findUnique({
+        const agency = await this.prisma.organization.findUnique({
             where: { id: agencyId },
             select: { name: true, licenseNumber: true, logoUrl: true, bannerUrl: true, phone: true, email: true, city: true, address: true },
         });
