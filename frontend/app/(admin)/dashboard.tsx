@@ -23,7 +23,8 @@ import {
     Building2,
     Check,
     Video,
-    Bell
+    Bell,
+    Lock,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { candidateService } from '../../services/candidateService';
