@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Pressable, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, User, MapPin, ArrowRight, Clock, ShieldCheck, FileCheck, Award, Plane, Lock } from 'lucide-react-native';
+import { ArrowLeft, User, MapPin, ArrowRight, Clock, ShieldCheck, FileCheck, Award, Plane, Lock, Search } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminPipelineScreen() {
     const router = useRouter();
     const { admin } = useAuth();
     const [selectedStage, setSelectedStage] = useState<string>('APPLIED');
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
     if (!admin) {
         return (
@@ -37,15 +38,15 @@ export default function AdminPipelineScreen() {
     }
 
     const stages = [
-        { key: 'APPLIED', label: '1. Applied', count: 5, icon: Award },
-        { key: 'UNDER_REVIEW', label: '2. Under Review', count: 4, icon: ShieldCheck },
-        { key: 'SHORTLISTED', label: '3. Shortlisted', count: 6, icon: FileCheck },
-        { key: 'SENT_TO_EMPLOYER', label: '4. Sent to Employer', count: 3, icon: Clock },
-        { key: 'EMPLOYER_REVIEW', label: '5. Employer Review', count: 4, icon: User },
-        { key: 'INTERVIEW', label: '6. Interview', count: 2, icon: Clock },
-        { key: 'SELECTED', label: '7. Selected', count: 5, icon: Award },
-        { key: 'DOCUMENTATION', label: '8. Documentation & Visa', count: 7, icon: FileCheck },
-        { key: 'DEPLOYED', label: '9. Deployed Overseas', count: 32, icon: Plane },
+        { key: 'APPLIED', label: '1. Applied', count: 5, icon: Award, index: 1 },
+        { key: 'UNDER_REVIEW', label: '2. Under Review', count: 4, icon: ShieldCheck, index: 2 },
+        { key: 'SHORTLISTED', label: '3. Shortlisted', count: 6, icon: FileCheck, index: 3 },
+        { key: 'SENT_TO_EMPLOYER', label: '4. Sent to Employer', count: 3, icon: Clock, index: 4 },
+        { key: 'EMPLOYER_REVIEW', label: '5. Employer Review', count: 4, icon: User, index: 5 },
+        { key: 'INTERVIEW', label: '6. Interview', count: 2, icon: Clock, index: 6 },
+        { key: 'SELECTED', label: '7. Selected', count: 5, icon: Award, index: 7 },
+        { key: 'DOCUMENTATION', label: '8. Documentation & Visa', count: 7, icon: FileCheck, index: 8 },
+        { key: 'DEPLOYED', label: '9. Deployed Overseas', count: 32, icon: Plane, index: 9 },
     ];
 
     const candidatePipelines = [
@@ -87,9 +88,14 @@ export default function AdminPipelineScreen() {
         },
     ];
 
-    const filtered = candidatePipelines.filter(
-        (p) => p.currentStage === selectedStage,
-    );
+    const activeStageObj = stages.find((s) => s.key === selectedStage) || stages[0];
+
+    const filtered = candidatePipelines.filter((p) => {
+        const matchesStage = p.currentStage === selectedStage;
+        const q = searchQuery.toLowerCase();
+        const matchesQuery = p.candidateCode.toLowerCase().includes(q) || p.candidateName.toLowerCase().includes(q) || p.employerName.toLowerCase().includes(q);
+        return matchesStage && matchesQuery;
+    });
 
     const handleAdvanceStage = (pipelineId: string) => {
         Alert.alert(
@@ -124,16 +130,16 @@ export default function AdminPipelineScreen() {
                             key={s.key}
                             onPress={() => setSelectedStage(s.key)}
                             className={`px-3.5 py-2.5 rounded-xl mr-2 flex-row items-center border ${selectedStage === s.key
-                                ? 'bg-emerald-600 border-emerald-700 shadow-xs'
+                                ? 'bg-slate-900 border-slate-900 shadow-xs'
                                 : 'bg-slate-100 border-slate-200'
                                 }`}
                         >
-                            <s.icon size={14} color={selectedStage === s.key ? '#FFFFFF' : '#64748B'} className="mr-1.5" />
-                            <Text className={`text-xs font-bold ${selectedStage === s.key ? 'text-white' : 'text-slate-700'}`}>
+                            <s.icon size={14} color={selectedStage === s.key ? '#F59E0B' : '#64748B'} className="mr-1.5" />
+                            <Text className={`text-xs font-bold ${selectedStage === s.key ? 'text-amber-400' : 'text-slate-700'}`}>
                                 {s.label}
                             </Text>
-                            <View className={`ml-2 px-1.5 py-0.5 rounded-full ${selectedStage === s.key ? 'bg-white/30' : 'bg-slate-200'}`}>
-                                <Text className={`text-xs font-extrabold ${selectedStage === s.key ? 'text-white' : 'text-slate-700'}`}>
+                            <View className={`ml-2 px-1.5 py-0.5 rounded-full ${selectedStage === s.key ? 'bg-amber-500/20 border border-amber-500/40' : 'bg-slate-200'}`}>
+                                <Text className={`text-xs font-extrabold ${selectedStage === s.key ? 'text-amber-400' : 'text-slate-700'}`}>
                                     {s.count}
                                 </Text>
                             </View>
@@ -142,10 +148,31 @@ export default function AdminPipelineScreen() {
                 </ScrollView>
             </View>
 
+            {/* Search Bar & Stage Indicator */}
+            <View className="px-5 pt-4 pb-2">
+                <View className="flex-row items-center bg-white border border-slate-200 rounded-2xl px-4 py-1 mb-3 shadow-xs">
+                    <Search size={16} color="#64748B" />
+                    <TextInput
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder="Search candidate code, name, employer..."
+                        placeholderTextColor="#94A3B8"
+                        className="flex-1 text-slate-900 text-xs ml-2.5 py-2 font-medium"
+                    />
+                </View>
+
+                <View className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex-row items-center justify-between">
+                    <Text className="text-white text-xs font-extrabold">Active Milestone: {activeStageObj.label}</Text>
+                    <View className="bg-amber-500 px-2.5 py-0.5 rounded-full">
+                        <Text className="text-slate-950 text-[10px] font-black">Stage {activeStageObj.index} of 9</Text>
+                    </View>
+                </View>
+            </View>
+
             {/* Pipeline Candidate List */}
-            <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
+            <ScrollView className="flex-1 px-5 pt-1" showsVerticalScrollIndicator={false}>
                 {filtered.length === 0 ? (
-                    <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-4 shadow-xs">
+                    <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-2 shadow-xs">
                         <Clock size={36} color="#94A3B8" />
                         <Text className="text-sm font-bold text-slate-800 mt-2">No Candidates in this Stage</Text>
                         <Text className="text-xs text-slate-500 text-center mt-1 font-medium">
@@ -183,10 +210,10 @@ export default function AdminPipelineScreen() {
 
                             <TouchableOpacity
                                 onPress={() => handleAdvanceStage(item.id)}
-                                className="bg-emerald-600 py-3 rounded-xl flex-row items-center justify-center mt-1 active:opacity-90 shadow-xs"
+                                className="bg-amber-500 py-3 rounded-xl flex-row items-center justify-center mt-1 active:opacity-90 shadow-xs"
                             >
-                                <Text className="text-white text-xs font-extrabold mr-1.5">Advance Milestone Stage</Text>
-                                <ArrowRight size={14} color="#FFFFFF" />
+                                <Text className="text-slate-950 text-xs font-black mr-1.5">Advance Milestone Stage</Text>
+                                <ArrowRight size={14} color="#0F172A" />
                             </TouchableOpacity>
                         </View>
                     ))
