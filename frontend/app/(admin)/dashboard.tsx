@@ -166,7 +166,7 @@ export default function AdminDashboard() {
                     The Agency Admin Portal, 3-Step Candidate Wizard, and ATS Pipeline are restricted to licensed agency administrators.
                 </Text>
                 <Pressable
-                    onPress={() => router.push('/(auth)/login')}
+                    onPress={() => router.push('/(admin)/login')}
                     className="bg-amber-500 px-6 py-3.5 rounded-full items-center active:bg-amber-600 shadow-lg"
                 >
                     <Text className="text-slate-950 text-xs font-black uppercase tracking-wider">
