@@ -57,7 +57,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @MessageBody()
         data: {
             conversationId: string;
-            senderType: 'user' | 'admin';
+            senderType: 'user' | 'agency';
             senderId: string;
             text: string;
             attachmentUrl?: string;
