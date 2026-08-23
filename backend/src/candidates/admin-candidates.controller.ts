@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CandidatesService } from './candidates.service';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
@@ -35,6 +35,16 @@ export class AdminCandidatesController {
     @ApiOperation({ summary: 'Update agency candidate profile' })
     async update(@Param('id') id: string, @Body() body: any) {
         return this.candidatesService.update(id, body);
+    }
+
+    @Patch(':candidateId/documents/:docId/verify')
+    @ApiOperation({ summary: 'Verify candidate document clearance (Passport, Medical, Visa)' })
+    async verifyDocument(
+        @Param('candidateId') candidateId: string,
+        @Param('docId') docId: string,
+        @Body() body: { status: 'VERIFIED' | 'REJECTED'; notes?: string },
+    ) {
+        return this.candidatesService.verifyDocument(candidateId, docId, body.status, body.notes);
     }
 
     @Delete(':id')

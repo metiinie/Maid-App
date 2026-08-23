@@ -117,11 +117,11 @@ export class CandidatesService {
             where: { id: documentId },
             data: {
                 verificationStatus: status,
-                verifiedAt: status === 'VERIFIED' ? new Date() : null,
             },
         });
 
-        if (document.type === 'MEDICAL' || document.type === 'MEDICAL_CLEARANCE') {
+        const docType = (document.documentType || '').toUpperCase();
+        if (docType.includes('MEDICAL')) {
             await this.prisma.candidate.update({
                 where: { id: candidateId },
                 data: {
@@ -129,7 +129,7 @@ export class CandidatesService {
                     medicalClearanceDate: status === 'VERIFIED' ? new Date() : null,
                 },
             });
-        } else if (document.type === 'VISA') {
+        } else if (docType.includes('VISA')) {
             await this.prisma.candidate.update({
                 where: { id: candidateId },
                 data: {
