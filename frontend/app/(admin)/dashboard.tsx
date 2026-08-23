@@ -21,13 +21,15 @@ import {
     Briefcase,
     CreditCard,
     Building2,
+    Check,
+    Video,
+    Bell
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { candidateService } from '../../services/candidateService';
 import { vacancyService } from '../../services/vacancyService';
 import { pipelineService } from '../../services/pipelineService';
 import { subscriptionService } from '../../services/subscriptionService';
-import { PremiumHeader } from '../../components/PremiumHeader';
 import { StatCard } from '../../components/StatCard';
 
 const stageFlow = [
@@ -52,8 +54,20 @@ export default function AdminDashboard() {
     const [subscription, setSubscription] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
+    // 3-Step Wizard Modal State
     const [addCandModal, setAddCandModal] = useState(false);
-    const [newCand, setNewCand] = useState({ first_name: '', last_name: '', passport_number: '' });
+    const [wizardStep, setWizardStep] = useState(1);
+    const [newCand, setNewCand] = useState({
+        first_name: '',
+        last_name: '',
+        age: '25',
+        skill_category: 'Domestic Worker',
+        experience_years: '3',
+        medical_status: 'Cleared',
+        passport_status: 'Valid',
+        passport_number: '',
+        notes: '',
+    });
 
     async function loadData() {
         setLoading(true);
@@ -78,17 +92,32 @@ export default function AdminDashboard() {
         loadData();
     }, []);
 
-    async function addCandidate() {
-        if (!newCand.first_name || !newCand.last_name) return;
+    async function submitCandidateWizard() {
+        if (!newCand.first_name || !newCand.last_name) {
+            Alert.alert('Required', 'First and Last Name are required.');
+            return;
+        }
         try {
             const fd = new FormData();
             Object.entries(newCand).forEach(([k, v]) => fd.append(k, v));
             await candidateService.createAdminCandidate(fd);
             setAddCandModal(false);
-            setNewCand({ first_name: '', last_name: '', passport_number: '' });
+            setWizardStep(1);
+            setNewCand({
+                first_name: '',
+                last_name: '',
+                age: '25',
+                skill_category: 'Domestic Worker',
+                experience_years: '3',
+                medical_status: 'Cleared',
+                passport_status: 'Valid',
+                passport_number: '',
+                notes: '',
+            });
             loadData();
+            Alert.alert('Success', 'Candidate published to agency roster!');
         } catch (err: any) {
-            Alert.alert('Error', err.message);
+            Alert.alert('Error', err.message || 'Failed to save candidate.');
         }
     }
 
@@ -125,34 +154,61 @@ export default function AdminDashboard() {
 
     return (
         <View className="flex-1 bg-slate-50">
-            {/* Premium Header */}
-            <PremiumHeader subtitle={activeWorkspace?.name || 'Recruitment Agency Management Portal'} />
+            {/* Deep Navy Admin Header (#0F172A) */}
+            <View className="bg-slate-900 px-5 pt-14 pb-5 shadow-md">
+                <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1 mr-2">
+                        <Pressable onPress={() => router.back()} className="mr-3 p-1">
+                            <ArrowLeft size={20} color="#FFFFFF" />
+                        </Pressable>
+                        <View>
+                            <View className="flex-row items-center gap-2">
+                                <Text className="text-white text-lg font-black tracking-wide">
+                                    Agency Admin Portal
+                                </Text>
+                                <View className="bg-amber-500 px-2 py-0.5 rounded-full">
+                                    <Text className="text-slate-950 text-[10px] font-black uppercase">
+                                        LICENSED
+                                    </Text>
+                                </View>
+                            </View>
+                            <Text className="text-amber-400 text-xs font-semibold mt-0.5">
+                                {activeWorkspace?.name || 'Licensed Ethiopian Manpower Agency'}
+                            </Text>
+                        </View>
+                    </View>
+
+                    <Pressable onPress={() => logoutAdmin()} className="p-2 rounded-full bg-slate-800">
+                        <LogOut size={18} color="#F59E0B" />
+                    </Pressable>
+                </View>
+            </View>
 
             {/* ATS Kanban Quick Banner */}
             <View className="px-5 pt-4">
                 <Pressable
                     onPress={() => router.push('/(admin)/pipeline')}
-                    className="bg-blue-950 border border-blue-900 p-4 rounded-3xl flex-row items-center justify-between shadow-xs active:opacity-90"
+                    className="bg-slate-900 border border-slate-800 p-4 rounded-3xl flex-row items-center justify-between shadow-xs active:opacity-90"
                 >
                     <View className="flex-row items-center gap-3 flex-1 mr-2">
-                        <View className="w-10 h-10 rounded-2xl bg-blue-900 items-center justify-center border border-blue-800">
-                            <GitPullRequest size={20} color="#93C5FD" />
+                        <View className="w-10 h-10 rounded-2xl bg-amber-500 items-center justify-center">
+                            <GitPullRequest size={20} color="#0F172A" />
                         </View>
                         <View className="flex-1">
                             <Text className="text-white text-xs font-extrabold">Open 9-Stage ATS Kanban Board</Text>
-                            <Text className="text-blue-200 text-[10px] font-semibold">Track GAMCA medicals, MOLSA permits & Enjaz visas</Text>
+                            <Text className="text-amber-300 text-[10px] font-semibold">Track GAMCA medicals, MOLSA permits & Enjaz visas</Text>
                         </View>
                     </View>
-                    <View className="bg-emerald-500 px-3.5 py-2 rounded-xl">
-                        <Text className="text-emerald-950 text-xs font-black">Open →</Text>
+                    <View className="bg-amber-500 px-3.5 py-2 rounded-xl">
+                        <Text className="text-slate-950 text-xs font-black">Open →</Text>
                     </View>
                 </Pressable>
             </View>
 
             {/* Metrics Grid */}
             <View className="px-5 pt-3 flex-row flex-wrap gap-3">
-                <StatCard label="Total Roster" value={candidates.length} icon={Users} color="#059669" bgColor="bg-emerald-50" trend="+12%" />
-                <StatCard label="Job Demands" value={vacancies.length} icon={Briefcase} color="#0284C7" bgColor="bg-sky-50" trend="Active" />
+                <StatCard label="Total Roster" value={candidates.length} icon={Users} color="#0F172A" bgColor="bg-slate-100" trend="+12%" />
+                <StatCard label="Job Demands" value={vacancies.length} icon={Briefcase} color="#D97706" bgColor="bg-amber-50" trend="Active" />
             </View>
 
             {/* Segmented Tab Bar */}
@@ -168,13 +224,13 @@ export default function AdminDashboard() {
                         <Pressable
                             key={tab.key}
                             onPress={() => setActiveTab(tab.key)}
-                            className={`px-4 py-2 rounded-xl border ${isActive
-                                ? 'bg-emerald-600 border-emerald-600'
+                            className={`px-4 py-2 rounded-full border ${isActive
+                                ? 'bg-slate-900 border-slate-900'
                                 : 'bg-white border-slate-200'
                                 }`}
                         >
                             <Text
-                                className={`text-xs font-extrabold ${isActive ? 'text-white' : 'text-slate-800'
+                                className={`text-xs font-extrabold ${isActive ? 'text-amber-400' : 'text-slate-800'
                                     }`}
                             >
                                 {tab.label}
@@ -186,49 +242,52 @@ export default function AdminDashboard() {
 
             {/* Main Content Area */}
             {loading ? (
-                <ActivityIndicator color="#059669" size="large" className="mt-10" />
+                <ActivityIndicator color="#F59E0B" size="large" className="mt-10" />
             ) : (
                 <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
                     {activeTab === 'candidates' && (
                         <View>
                             <Pressable
-                                onPress={() => setAddCandModal(true)}
-                                className="bg-emerald-600 py-3 rounded-xl items-center flex-row justify-center gap-2 mb-4 shadow-xs active:opacity-90"
+                                onPress={() => {
+                                    setWizardStep(1);
+                                    setAddCandModal(true);
+                                }}
+                                className="bg-amber-500 py-3.5 rounded-full items-center flex-row justify-center gap-2 mb-4 shadow-sm active:bg-amber-600"
                             >
-                                <Plus size={16} color="#FFFFFF" />
-                                <Text className="text-white text-xs font-extrabold">Add New Candidate</Text>
+                                <Plus size={18} color="#0F172A" />
+                                <Text className="text-slate-950 text-xs font-black uppercase">Add Candidate (3-Step Wizard)</Text>
                             </Pressable>
 
                             {candidates.map((c: any) => (
                                 <View
                                     key={c.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-xs"
+                                    className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
                                 >
                                     <View className="flex-row items-center justify-between">
                                         <Text className="text-slate-900 text-sm font-bold">
                                             {c.first_name} {c.last_name}
                                         </Text>
                                         <View
-                                            className={`px-2.5 py-0.5 rounded-full ${c.medical_status === 'cleared'
+                                            className={`px-2.5 py-0.5 rounded-full ${c.medical_status === 'Cleared' || c.medical_status === 'cleared'
                                                 ? 'bg-emerald-100 border border-emerald-200'
-                                                : 'bg-slate-100 border border-slate-200'
+                                                : 'bg-amber-100 border border-amber-200'
                                                 }`}
                                         >
                                             <Text
-                                                className={`text-[10px] font-bold ${c.medical_status === 'cleared'
-                                                    ? 'text-emerald-800'
-                                                    : 'text-slate-700'
+                                                className={`text-[10px] font-extrabold ${c.medical_status === 'Cleared' || c.medical_status === 'cleared'
+                                                    ? 'text-emerald-900'
+                                                    : 'text-amber-900'
                                                     }`}
                                             >
-                                                {c.medical_status}
+                                                {c.medical_status || 'Cleared'}
                                             </Text>
                                         </View>
                                     </View>
-                                    <Text className="text-blue-900 text-xs font-semibold mt-1">
-                                        {c.category_name || 'Domestic Worker'}
+                                    <Text className="text-slate-700 text-xs font-semibold mt-1">
+                                        {c.category_name || c.skill_category || 'Domestic Worker'}
                                     </Text>
                                     <Text className="text-slate-500 text-[11px] mt-1 font-medium">
-                                        Passport: {c.passport_number || 'Pending'}
+                                        Passport: {c.passport_number || 'Valid'}
                                     </Text>
                                 </View>
                             ))}
@@ -240,10 +299,10 @@ export default function AdminDashboard() {
                             {vacancies.map((v: any) => (
                                 <View
                                     key={v.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-xs"
+                                    className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
                                 >
                                     <Text className="text-slate-900 text-sm font-bold">{v.title}</Text>
-                                    <Text className="text-emerald-700 text-xs font-bold mt-1">
+                                    <Text className="text-amber-700 text-xs font-bold mt-1">
                                         {v.target_country} • ${v.salary_monthly} USD/mo
                                     </Text>
                                     <Text className="text-slate-500 text-[11px] mt-1 font-medium">
@@ -259,14 +318,14 @@ export default function AdminDashboard() {
                             {pipelines.map((p: any) => (
                                 <View
                                     key={p.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-4 mb-3 shadow-xs"
+                                    className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
                                 >
                                     <Text className="text-slate-900 text-sm font-bold">
                                         {p.candidate_name || 'Candidate Profile'}
                                     </Text>
                                     <Text className="text-slate-700 text-xs mt-1">
                                         Employer: {p.employer_name} • Stage:{' '}
-                                        <Text className="text-blue-900 font-bold">
+                                        <Text className="text-amber-700 font-bold">
                                             {p.current_stage?.replace('_', ' ')}
                                         </Text>
                                     </Text>
@@ -276,9 +335,9 @@ export default function AdminDashboard() {
                                             <Pressable
                                                 key={s.to}
                                                 onPress={() => advanceStage(p.id, s.to)}
-                                                className="mt-3 bg-blue-900 py-2.5 rounded-lg items-center active:opacity-90"
+                                                className="mt-3 bg-slate-900 py-2.5 rounded-xl items-center active:opacity-90"
                                             >
-                                                <Text className="text-white text-xs font-bold">
+                                                <Text className="text-amber-400 text-xs font-extrabold">
                                                     Advance → {s.label}
                                                 </Text>
                                             </Pressable>
@@ -296,9 +355,9 @@ export default function AdminDashboard() {
                             {plans.map((plan: any) => (
                                 <View
                                     key={plan.id}
-                                    className="bg-white border border-slate-200 rounded-xl p-5 mb-4 shadow-xs"
+                                    className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 shadow-xs"
                                 >
-                                    <Text className="text-emerald-700 text-xs font-extrabold uppercase tracking-wider">
+                                    <Text className="text-amber-700 text-xs font-extrabold uppercase tracking-wider">
                                         {plan.code}
                                     </Text>
                                     <Text className="text-slate-900 text-base font-bold mt-1">
@@ -310,9 +369,9 @@ export default function AdminDashboard() {
                                     </Text>
                                     <Pressable
                                         onPress={() => checkout(plan.id)}
-                                        className="mt-4 bg-emerald-600 py-3 rounded-lg items-center active:opacity-90"
+                                        className="mt-4 bg-amber-500 py-3 rounded-full items-center active:opacity-90"
                                     >
-                                        <Text className="text-white text-xs font-bold">Checkout with Chapa</Text>
+                                        <Text className="text-slate-950 text-xs font-black uppercase">Checkout with Chapa</Text>
                                     </Pressable>
                                 </View>
                             ))}
@@ -322,48 +381,142 @@ export default function AdminDashboard() {
                 </ScrollView>
             )}
 
-            {/* Add Candidate Modal */}
+            {/* 3-Step Candidate Publishing Wizard Modal */}
             <Modal visible={addCandModal} animationType="slide" transparent>
-                <View className="flex-1 bg-black/50 justify-center items-center p-5">
-                    <View className="bg-white rounded-2xl p-6 w-full max-w-sm border border-slate-200 shadow-xl">
-                        <View className="flex-row items-center justify-between mb-4">
-                            <Text className="text-slate-900 text-base font-bold">Add Candidate</Text>
-                            <Pressable onPress={() => setAddCandModal(false)}>
-                                <X size={20} color="#64748B" />
+                <View className="flex-1 bg-black/60 justify-end">
+                    <View className="bg-white rounded-t-3xl border-t border-slate-200 p-6 max-h-[90%]">
+                        {/* Wizard Header */}
+                        <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                            <View>
+                                <Text className="text-slate-900 text-lg font-black">Add Candidate</Text>
+                                <Text className="text-amber-600 text-xs font-extrabold">Step {wizardStep} of 3</Text>
+                            </View>
+                            <Pressable onPress={() => setAddCandModal(false)} className="p-2 rounded-full bg-slate-100">
+                                <X size={18} color="#64748B" />
                             </Pressable>
                         </View>
-                        <View className="gap-3">
-                            <TextInput
-                                value={newCand.first_name}
-                                onChangeText={(v) => setNewCand({ ...newCand, first_name: v })}
-                                placeholder="First Name *"
-                                placeholderTextColor="#94A3B8"
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-slate-900 text-xs"
-                            />
-                            <TextInput
-                                value={newCand.last_name}
-                                onChangeText={(v) => setNewCand({ ...newCand, last_name: v })}
-                                placeholder="Last Name *"
-                                placeholderTextColor="#94A3B8"
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-slate-900 text-xs"
-                            />
-                            <TextInput
-                                value={newCand.passport_number}
-                                onChangeText={(v) => setNewCand({ ...newCand, passport_number: v })}
-                                placeholder="Passport Number *"
-                                placeholderTextColor="#94A3B8"
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-slate-900 text-xs"
-                            />
-                            <Pressable
-                                onPress={addCandidate}
-                                className="bg-emerald-600 py-3 rounded-lg items-center mt-2 active:opacity-90"
-                            >
-                                <Text className="text-white text-xs font-bold">Save Candidate</Text>
-                            </Pressable>
+
+                        {/* Step Progress Bar */}
+                        <View className="flex-row gap-2 mb-6">
+                            <View className={`flex-1 h-1.5 rounded-full ${wizardStep >= 1 ? 'bg-amber-500' : 'bg-slate-200'}`} />
+                            <View className={`flex-1 h-1.5 rounded-full ${wizardStep >= 2 ? 'bg-amber-500' : 'bg-slate-200'}`} />
+                            <View className={`flex-1 h-1.5 rounded-full ${wizardStep >= 3 ? 'bg-amber-500' : 'bg-slate-200'}`} />
                         </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            {wizardStep === 1 && (
+                                <View className="gap-3">
+                                    <View>
+                                        <Text className="text-slate-700 text-xs font-bold mb-1">First Name *</Text>
+                                        <TextInput
+                                            value={newCand.first_name}
+                                            onChangeText={(v) => setNewCand({ ...newCand, first_name: v })}
+                                            placeholder="Candidate First Name"
+                                            className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                                        />
+                                    </View>
+                                    <View>
+                                        <Text className="text-slate-700 text-xs font-bold mb-1">Last Name *</Text>
+                                        <TextInput
+                                            value={newCand.last_name}
+                                            onChangeText={(v) => setNewCand({ ...newCand, last_name: v })}
+                                            placeholder="Candidate Last Name"
+                                            className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                                        />
+                                    </View>
+                                    <View>
+                                        <Text className="text-slate-700 text-xs font-bold mb-1">Skill Category</Text>
+                                        <TextInput
+                                            value={newCand.skill_category}
+                                            onChangeText={(v) => setNewCand({ ...newCand, skill_category: v })}
+                                            placeholder="Domestic Worker / Driver / Chef"
+                                            className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                                        />
+                                    </View>
+                                    <Pressable
+                                        onPress={() => setWizardStep(2)}
+                                        className="bg-slate-900 py-4 rounded-full items-center mt-4"
+                                    >
+                                        <Text className="text-white text-sm font-extrabold">Next: Medical & Documents →</Text>
+                                    </Pressable>
+                                </View>
+                            )}
+
+                            {wizardStep === 2 && (
+                                <View className="gap-3">
+                                    <View>
+                                        <Text className="text-slate-700 text-xs font-bold mb-1">Passport Number</Text>
+                                        <TextInput
+                                            value={newCand.passport_number}
+                                            onChangeText={(v) => setNewCand({ ...newCand, passport_number: v })}
+                                            placeholder="EP1234567"
+                                            className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                                        />
+                                    </View>
+                                    <View>
+                                        <Text className="text-slate-700 text-xs font-bold mb-1">Medical Clearance Status</Text>
+                                        <TextInput
+                                            value={newCand.medical_status}
+                                            onChangeText={(v) => setNewCand({ ...newCand, medical_status: v })}
+                                            placeholder="Cleared / Pending"
+                                            className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                                        />
+                                    </View>
+                                    <View>
+                                        <Text className="text-slate-700 text-xs font-bold mb-1">Bio / Character Notes</Text>
+                                        <TextInput
+                                            value={newCand.notes}
+                                            onChangeText={(v) => setNewCand({ ...newCand, notes: v })}
+                                            placeholder="Brief background details…"
+                                            multiline
+                                            className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold h-20"
+                                        />
+                                    </View>
+                                    <View className="flex-row gap-2 mt-4">
+                                        <Pressable
+                                            onPress={() => setWizardStep(1)}
+                                            className="flex-1 bg-slate-100 py-4 rounded-full items-center"
+                                        >
+                                            <Text className="text-slate-800 text-sm font-bold">Back</Text>
+                                        </Pressable>
+                                        <Pressable
+                                            onPress={() => setWizardStep(3)}
+                                            className="flex-1 bg-slate-900 py-4 rounded-full items-center"
+                                        >
+                                            <Text className="text-white text-sm font-extrabold">Next: Review →</Text>
+                                        </Pressable>
+                                    </View>
+                                </View>
+                            )}
+
+                            {wizardStep === 3 && (
+                                <View className="gap-3">
+                                    <View className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                                        <Text className="text-slate-900 text-base font-black mb-2">Review Summary</Text>
+                                        <Text className="text-slate-800 text-sm font-bold">
+                                            {newCand.first_name} {newCand.last_name}
+                                        </Text>
+                                        <Text className="text-amber-700 text-xs font-semibold mt-0.5">
+                                            {newCand.skill_category} • {newCand.medical_status} Medical
+                                        </Text>
+                                        <Text className="text-slate-500 text-xs mt-1">
+                                            Passport: {newCand.passport_number || 'Provided'}
+                                        </Text>
+                                    </View>
+
+                                    <Pressable
+                                        onPress={submitCandidateWizard}
+                                        className="bg-amber-500 py-4 rounded-full items-center mt-4 shadow-sm"
+                                    >
+                                        <Text className="text-slate-950 text-sm font-black uppercase">Publish Candidate</Text>
+                                    </Pressable>
+                                </View>
+                            )}
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
         </View>
     );
 }
+
