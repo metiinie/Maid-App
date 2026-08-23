@@ -1,25 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, ActivityIndicator, Modal, Alert } from 'react-native';
-import { Search, Briefcase, MapPin, DollarSign, CheckCircle2, ShieldCheck, X, Building2, Heart, ChevronRight } from 'lucide-react-native';
+import React, { useState, useCallback } from 'react';
+import {
+    View,
+    Text,
+    ScrollView,
+    TextInput,
+    Pressable,
+    ActivityIndicator,
+    Modal,
+    Alert,
+    RefreshControl,
+    TouchableOpacity,
+} from 'react-native';
+import {
+    Search,
+    Briefcase,
+    MapPin,
+    DollarSign,
+    CheckCircle2,
+    ShieldCheck,
+    X,
+    Building2,
+    Heart,
+    ChevronRight,
+    MessageSquare,
+    Globe,
+    Send,
+} from 'lucide-react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { vacancyService } from '../../services/vacancyService';
 import { bookmarkService, SavedVacancy } from '../../services/bookmarkService';
 import { useAuth } from '../../context/AuthContext';
-import { useRouter } from 'expo-router';
+import { useChat } from '../../context/ChatContext';
 
 export default function VacanciesScreen() {
     const { user } = useAuth();
     const router = useRouter();
+    const { openChatWithAgency } = useChat();
+
     const [vacancies, setVacancies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState('ALL');
+    const [selectedCountry, setSelectedCountry] = useState('ALL');
     const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
     const [applyingVacancy, setApplyingVacancy] = useState<any>(null);
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
 
     const categories = [
-        { id: 'ALL', label: 'All Jobs' },
+        { id: 'ALL', label: 'All Roles' },
         { id: 'DOMESTIC', label: 'Domestic Worker' },
         { id: 'NANNY', label: 'Nanny / Childcare' },
         { id: 'CAREGIVER', label: 'Elderly Care' },
@@ -27,10 +57,21 @@ export default function VacanciesScreen() {
         { id: 'DRIVER', label: 'Driver' },
     ];
 
-    useEffect(() => {
-        fetchVacancies();
-        loadSavedBookmarks();
-    }, [activeCategory]);
+    const countries = [
+        { id: 'ALL', label: 'All Countries' },
+        { id: 'Saudi Arabia', label: '🇸🇦 Saudi Arabia' },
+        { id: 'UAE', label: '🇦🇪 UAE' },
+        { id: 'Kuwait', label: '🇰🇼 Kuwait' },
+        { id: 'Qatar', label: '🇶🇦 Qatar' },
+    ];
+
+    // Auto-reload vacancies and bookmarks on tab focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchVacancies(false);
+            loadSavedBookmarks();
+        }, [activeCategory, selectedCountry])
+    );
 
     async function loadSavedBookmarks() {
         try {
@@ -57,8 +98,8 @@ export default function VacanciesScreen() {
         });
     }
 
-    async function fetchVacancies() {
-        setLoading(true);
+    async function fetchVacancies(showLoader = true) {
+        if (showLoader) setLoading(true);
         try {
             const params: any = {};
             if (search) params.search = search;
@@ -71,9 +112,11 @@ export default function VacanciesScreen() {
                     {
                         id: 'vac-101',
                         title: 'Experienced Housemaid & Arabic Cook',
+                        agency_id: 'agency-1',
                         agency_name: 'Ethio-Gulf Overseas Recruitment',
                         molsa_license: 'MOLSA License #ET-REC-2024-089',
                         target_country: 'Saudi Arabia (Riyadh)',
+                        country_code: 'Saudi Arabia',
                         country_flag: '🇸🇦',
                         salary_monthly: '1,500 SAR ($400 USD)',
                         currency: 'SAR',
@@ -83,9 +126,11 @@ export default function VacanciesScreen() {
                     {
                         id: 'vac-102',
                         title: 'Nanny / Infant Care Specialist',
+                        agency_id: 'agency-2',
                         agency_name: 'Blue Nile Foreign Employment',
                         molsa_license: 'MOLSA License #ET-REC-2024-042',
                         target_country: 'United Arab Emirates (Dubai)',
+                        country_code: 'UAE',
                         country_flag: '🇦🇪',
                         salary_monthly: '1,600 AED ($435 USD)',
                         currency: 'AED',
@@ -95,9 +140,11 @@ export default function VacanciesScreen() {
                     {
                         id: 'vac-103',
                         title: 'Senior Elderly Caregiver',
+                        agency_id: 'agency-3',
                         agency_name: 'Addis Overseas Recruitment',
                         molsa_license: 'MOLSA License #ET-REC-2024-115',
                         target_country: 'Kuwait (Kuwait City)',
+                        country_code: 'Kuwait',
                         country_flag: '🇰🇼',
                         salary_monthly: '130 KWD ($425 USD)',
                         currency: 'KWD',
@@ -112,8 +159,14 @@ export default function VacanciesScreen() {
             console.error('Failed to fetch vacancies:', err);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     }
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchVacancies(false);
+    };
 
     async function handleApply() {
         if (!user) {
@@ -135,20 +188,26 @@ export default function VacanciesScreen() {
         }
     }
 
+    const filteredVacancies = vacancies.filter((vac) => {
+        if (selectedCountry === 'ALL') return true;
+        const target = (vac.target_country || vac.country_code || '').toLowerCase();
+        return target.includes(selectedCountry.toLowerCase());
+    });
+
     return (
         <View className="flex-1 bg-slate-50">
             {/* Header */}
             <View className="px-5 pt-14 pb-4 bg-white border-b border-slate-200">
                 <View className="flex-row items-center justify-between">
                     <View>
-                        <Text className="text-slate-900 text-xl font-extrabold">Job Vacancies</Text>
+                        <Text className="text-slate-900 text-xl font-extrabold">Find Job Vacancies</Text>
                         <Text className="text-slate-600 text-xs mt-0.5 font-medium">
                             Verified Gulf employment opportunities for Ethiopian workers
                         </Text>
                     </View>
-                    <View className="bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full flex-row items-center">
-                        <ShieldCheck size={12} color="#1E3A8A" />
-                        <Text className="text-blue-900 text-[10px] font-extrabold ml-1 uppercase">MOLSA Approved</Text>
+                    <View className="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex-row items-center">
+                        <ShieldCheck size={12} color="#059669" />
+                        <Text className="text-emerald-800 text-[10px] font-extrabold ml-1 uppercase">MOLSA Approved</Text>
                     </View>
                 </View>
             </View>
@@ -160,13 +219,36 @@ export default function VacanciesScreen() {
                     <TextInput
                         value={search}
                         onChangeText={setSearch}
-                        onSubmitEditing={fetchVacancies}
+                        onSubmitEditing={() => fetchVacancies(true)}
                         placeholder="Search job title, country (Saudi Arabia, UAE)..."
                         placeholderTextColor="#94A3B8"
                         className="flex-1 text-slate-900 text-xs ml-2.5 py-3 font-medium"
                         returnKeyType="search"
                     />
                 </View>
+            </View>
+
+            {/* Destination Country Filter Chips */}
+            <View className="px-5 mb-2">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-2 py-1">
+                    {countries.map((c) => {
+                        const isSel = selectedCountry === c.id;
+                        return (
+                            <TouchableOpacity
+                                key={c.id}
+                                onPress={() => setSelectedCountry(c.id)}
+                                className={`px-3 py-1.5 rounded-full border ${isSel
+                                    ? 'bg-slate-900 border-slate-900 shadow-xs'
+                                    : 'bg-white border-slate-200'
+                                    }`}
+                            >
+                                <Text className={`text-[11px] font-bold ${isSel ? 'text-white' : 'text-slate-700'}`}>
+                                    {c.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
             </View>
 
             {/* Category Filter Chips Bar */}
@@ -196,15 +278,19 @@ export default function VacanciesScreen() {
             {loading ? (
                 <ActivityIndicator color="#059669" size="large" className="mt-10" />
             ) : (
-                <ScrollView className="px-5 flex-1" showsVerticalScrollIndicator={false}>
-                    {vacancies.length === 0 ? (
+                <ScrollView
+                    className="px-5 flex-1"
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#059669']} />}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {filteredVacancies.length === 0 ? (
                         <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-4 shadow-xs">
                             <Briefcase size={32} color="#94A3B8" />
                             <Text className="text-slate-900 text-sm font-bold mt-3">No vacancies found</Text>
-                            <Text className="text-slate-500 text-xs text-center mt-1">Try searching for a different title or category.</Text>
+                            <Text className="text-slate-500 text-xs text-center mt-1">Try searching for a different title or country filter.</Text>
                         </View>
                     ) : (
-                        vacancies.map((vac: any) => {
+                        filteredVacancies.map((vac: any) => {
                             const isSaved = savedIds.has(vac.id);
                             return (
                                 <View
@@ -257,19 +343,28 @@ export default function VacanciesScreen() {
                                         </View>
                                     </Pressable>
 
-                                    {/* Action Buttons: View Specs & Quick Apply */}
+                                    {/* Action Buttons: Inquire Chat, Full Specs & Quick Apply */}
                                     <View className="flex-row gap-2 mt-4 pt-3 border-t border-slate-100">
+                                        <Pressable
+                                            onPress={() => openChatWithAgency(vac.agency_id || 'agency-1', vac.agency_name || 'Agency Support')}
+                                            className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 items-center justify-center active:opacity-80"
+                                        >
+                                            <MessageSquare size={16} color="#059669" />
+                                        </Pressable>
+
                                         <Pressable
                                             onPress={() => router.push(`/vacancy/${vac.id}` as any)}
                                             className="flex-1 bg-slate-100 border border-slate-200 py-2.5 rounded-xl items-center flex-row justify-center gap-1"
                                         >
-                                            <Text className="text-slate-700 text-xs font-extrabold">Full Details</Text>
+                                            <Text className="text-slate-700 text-xs font-extrabold">Full Specs</Text>
                                             <ChevronRight size={14} color="#475569" />
                                         </Pressable>
+
                                         <Pressable
                                             onPress={() => { setApplyingVacancy(vac); setSuccess(false); }}
-                                            className="flex-1 bg-emerald-600 py-2.5 rounded-xl items-center justify-center active:opacity-90 shadow-xs"
+                                            className="flex-1 bg-emerald-600 py-2.5 rounded-xl items-center flex-row justify-center gap-1 active:opacity-90 shadow-xs"
                                         >
+                                            <Send size={12} color="#FFFFFF" />
                                             <Text className="text-white text-xs font-extrabold">Quick Apply</Text>
                                         </Pressable>
                                     </View>
@@ -348,4 +443,5 @@ export default function VacanciesScreen() {
         </View>
     );
 }
+
 

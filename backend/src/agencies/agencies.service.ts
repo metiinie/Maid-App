@@ -73,4 +73,15 @@ export class AgenciesService {
             },
         });
     }
+
+    async getVerifiedAgencies() {
+        return this.prisma.organization.findMany({
+            where: {
+                type: 'AGENCY',
+                isVerified: true,
+            },
+            orderBy: { name: 'asc' },
+        });
+    }
 }
+

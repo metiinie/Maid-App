@@ -10,6 +10,12 @@ import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 export class AgenciesController {
     constructor(private readonly agenciesService: AgenciesService) { }
 
+    @Get()
+    @ApiOperation({ summary: 'Get list of verified public agencies' })
+    async getVerifiedAgencies() {
+        return this.agenciesService.getVerifiedAgencies();
+    }
+
     @Post('onboard')
     @UseGuards(UserJwtGuard)
     @ApiBearerAuth()
@@ -18,6 +24,7 @@ export class AgenciesController {
         const userId = req.user.sub || req.user.id;
         return this.agenciesService.onboardAgency(userId, body);
     }
+
 
     @Get('admin/pending')
     @UseGuards(AdminJwtGuard)
