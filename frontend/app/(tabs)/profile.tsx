@@ -59,12 +59,12 @@ export default function ProfileScreen() {
             <View className="px-5 pt-6">
                 {/* LinkedIn-Style Persona Role Switcher Section */}
                 <View className="bg-slate-900 border border-slate-800 rounded-3xl p-5 mb-6 shadow-xl">
-                    <View className="flex-row items-center gap-2 mb-2">
-                        <Sparkles size={18} color="#F59E0B" />
-                        <Text className="text-white text-base font-black">Platform Mode Switcher</Text>
+                    <View className="flex-row items-center gap-2 mb-1.5">
+                        <Sparkles size={16} color="#F59E0B" />
+                        <Text className="text-white text-sm font-black">Role Switcher</Text>
                     </View>
-                    <Text className="text-slate-400 text-xs font-medium leading-5 mb-4">
-                        Switch your active platform persona between Gulf Employer and Ethiopian Job Seeker. Your profile and application history remain preserved.
+                    <Text className="text-slate-400 text-xs font-medium mb-3">
+                        Switch between Employer and Job Seeker mode.
                     </Text>
 
                     {/* Embed RoleToggle Component */}
