@@ -25,16 +25,12 @@ export class AgenciesService {
                 name: dto.name,
                 type: 'AGENCY',
                 licenseNumber: dto.licenseNumber,
-                licenseExpiry: dto.licenseExpiry ? new Date(dto.licenseExpiry) : null,
                 city: dto.city,
                 country: dto.country,
-                contactPhone: dto.contactPhone,
-                contactEmail: dto.contactEmail,
-                websiteUrl: dto.websiteUrl,
+                phone: dto.contactPhone,
+                email: dto.contactEmail,
                 logoUrl: dto.logoUrl,
-                taxId: dto.taxId,
                 isVerified: false,
-                verificationStatus: 'PENDING',
                 members: {
                     create: {
                         userId,
@@ -56,7 +52,7 @@ export class AgenciesService {
         return this.prisma.organization.findMany({
             where: {
                 type: 'AGENCY',
-                verificationStatus: 'PENDING',
+                isVerified: false,
             },
             include: {
                 members: { include: { user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } } } },
@@ -73,7 +69,7 @@ export class AgenciesService {
             where: { id: agencyId },
             data: {
                 isVerified: status === 'VERIFIED',
-                verificationStatus: status,
+                isActive: status === 'VERIFIED',
             },
         });
     }
