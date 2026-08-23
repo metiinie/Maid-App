@@ -1,23 +1,19 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Building2, User, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react-native';
+import { Building2, User, ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ModeSelectScreen() {
-    const { activeWorkspace, switchWorkspace, workspaces } = useAuth();
+    const { switchWorkspace, workspaces } = useAuth();
     const router = useRouter();
 
-    const selectRole = async (type: 'PERSONAL' | 'GULF_EMPLOYER' | 'AGENCY') => {
+    const selectRole = async (type: 'PERSONAL' | 'GULF_EMPLOYER') => {
         const target = workspaces.find((w) => w.type === type) || workspaces[0];
         if (target) {
             await switchWorkspace(target.id);
         }
-        if (type === 'AGENCY') {
-            router.replace('/(admin)/dashboard');
-        } else {
-            router.replace('/(tabs)');
-        }
+        router.replace('/(tabs)');
     };
 
     return (
@@ -27,21 +23,21 @@ export default function ModeSelectScreen() {
                 <View className="items-center mb-8">
                     <View className="bg-amber-500/20 border border-amber-500/30 px-3.5 py-1.5 rounded-full mb-3">
                         <Text className="text-amber-400 text-xs font-black tracking-widest uppercase">
-                            WELCOME TO ETHIO-GULF RECRUITMENT
+                            ETHIO-GULF RECRUITMENT PLATFORM
                         </Text>
                     </View>
                     <Text className="text-white text-2xl font-black text-center">
                         Select Your Account Role
                     </Text>
                     <Text className="text-slate-400 text-xs mt-2 text-center font-semibold px-4">
-                        Choose your primary intention to customize your dashboard feed
+                        Choose how you would like to use the platform. You can switch anytime in your Profile.
                     </Text>
                 </View>
 
                 {/* Option 1: Gulf Employer */}
                 <Pressable
                     onPress={() => selectRole('GULF_EMPLOYER')}
-                    className="bg-slate-800 border-2 border-amber-500/50 rounded-3xl p-5 mb-4 shadow-xl active:scale-[0.98]"
+                    className="bg-slate-800 border-2 border-amber-500/50 rounded-3xl p-5 mb-5 shadow-xl active:scale-[0.98]"
                 >
                     <View className="flex-row items-center justify-between mb-3">
                         <View className="w-12 h-12 rounded-2xl bg-amber-500/20 items-center justify-center border border-amber-500/30">
@@ -64,7 +60,7 @@ export default function ModeSelectScreen() {
                 {/* Option 2: Job Seeker / Candidate */}
                 <Pressable
                     onPress={() => selectRole('PERSONAL')}
-                    className="bg-slate-800 border border-slate-700 rounded-3xl p-5 mb-4 shadow-xl active:scale-[0.98]"
+                    className="bg-slate-800 border border-slate-700 rounded-3xl p-5 mb-8 shadow-xl active:scale-[0.98]"
                 >
                     <View className="flex-row items-center justify-between mb-3">
                         <View className="w-12 h-12 rounded-2xl bg-emerald-500/20 items-center justify-center border border-emerald-500/30">
@@ -84,26 +80,7 @@ export default function ModeSelectScreen() {
                     </View>
                 </Pressable>
 
-                {/* Option 3: Licensed Agency Admin */}
-                <Pressable
-                    onPress={() => selectRole('AGENCY')}
-                    className="bg-slate-800/80 border border-slate-700/80 rounded-3xl p-5 mb-6 active:scale-[0.98]"
-                >
-                    <View className="flex-row items-center justify-between mb-3">
-                        <View className="w-12 h-12 rounded-2xl bg-blue-500/20 items-center justify-center border border-blue-500/30">
-                            <ShieldCheck size={24} color="#60A5FA" />
-                        </View>
-                        <View className="bg-blue-500/20 px-3 py-1 rounded-full">
-                            <Text className="text-blue-400 text-[10px] font-black uppercase">RECRUITMENT AGENCY</Text>
-                        </View>
-                    </View>
-                    <Text className="text-white text-base font-bold">Licensed Agency Admin</Text>
-                    <Text className="text-slate-400 text-xs mt-1 font-medium">
-                        Access Agency SaaS portal, 3-step candidate publishing wizard & 9-stage ATS pipeline.
-                    </Text>
-                </Pressable>
-
-                {/* Skip / Continue */}
+                {/* Continue */}
                 <Pressable
                     onPress={() => router.replace('/(tabs)')}
                     className="bg-amber-500 py-4 rounded-full items-center flex-row justify-center gap-2 active:bg-amber-600 shadow-lg"
