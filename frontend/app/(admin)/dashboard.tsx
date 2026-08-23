@@ -291,6 +291,33 @@ export default function AdminDashboard() {
         },
     ];
 
+    const sampleAdminPlans = [
+        {
+            id: 'plan-starter',
+            code: 'STARTER',
+            name: 'Starter Overseas Agency',
+            price_etb: 2500,
+            features: ['Up to 20 Candidate Listings', '2 Active ATS Pipelines', 'Standard Support'],
+            recommended: false,
+        },
+        {
+            id: 'plan-pro',
+            code: 'PRO_ENTERPRISE',
+            name: 'Pro Overseas Agency (Recommended)',
+            price_etb: 5000,
+            features: ['Up to 100 Candidate Listings', 'Unlimited 9-Stage ATS Pipelines', 'MOLSA Compliance Export', 'Chapa Priority Settlement'],
+            recommended: true,
+        },
+        {
+            id: 'plan-enterprise',
+            code: 'ULTIMATE_HUB',
+            name: 'Enterprise Agency Network',
+            price_etb: 10000,
+            features: ['Unlimited Candidate Listings', 'Multi-Office Agency Roles', 'Dedicated Escrow & Legal Manager', '24/7 Priority Support'],
+            recommended: false,
+        },
+    ];
+
     async function loadData() {
         setLoading(true);
         try {
@@ -304,15 +331,17 @@ export default function AdminDashboard() {
             const fetchedCandidates = cRes.data || [];
             const fetchedVacancies = vRes.data || [];
             const fetchedPipelines = pRes.data || [];
+            const fetchedPlans = plRes.data || [];
             setCandidates(fetchedCandidates.length > 0 ? fetchedCandidates : sampleAdminCandidates);
             setVacancies(fetchedVacancies.length > 0 ? fetchedVacancies : sampleAdminVacancies);
             setPipelines(fetchedPipelines.length > 0 ? fetchedPipelines : sampleAdminPipelines);
             setSubscription(sRes.data || null);
-            setPlans(plRes.data || []);
+            setPlans(fetchedPlans.length > 0 ? fetchedPlans : sampleAdminPlans);
         } catch (e) {
             setCandidates(sampleAdminCandidates);
             setVacancies(sampleAdminVacancies);
             setPipelines(sampleAdminPipelines);
+            setPlans(sampleAdminPlans);
         }
         setLoading(false);
     }
