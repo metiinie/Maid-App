@@ -1,267 +1,287 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ShieldCheck, Users, Briefcase, MapPin, ArrowRight, CheckCircle2, User, Building2, LogIn } from 'lucide-react-native';
+import {
+    ShieldCheck,
+    Search,
+    Building2,
+    Briefcase,
+    Globe,
+    Lock,
+} from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
-import { candidateService } from '../../services/candidateService';
-import { WorkspaceSwitcher } from '../../components/WorkspaceSwitcher';
+import { RoleToggle } from '../../components/RoleToggle';
+import { CandidateCard, CandidateProps } from '../../components/CandidateCard';
+import { VacancyCard, VacancyProps } from '../../components/VacancyCard';
+import { InquiryModal } from '../../components/InquiryModal';
+
+const sampleCandidates: CandidateProps[] = [
+    {
+        id: 'cand-1',
+        first_name: 'Tigist',
+        last_name: 'Wolde',
+        role: 'Experienced Domestic Worker',
+        experience_years: 5,
+        medical_status: 'Cleared',
+        languages: ['Arabic', 'English', 'Amharic'],
+        video_url: 'https://sample-video.mp4',
+        avatar_initials: 'TW',
+        avatar_bg: 'bg-slate-900',
+    },
+    {
+        id: 'cand-2',
+        first_name: 'Biruk',
+        last_name: 'Getachew',
+        role: 'Professional Heavy Vehicle Driver',
+        experience_years: 8,
+        medical_status: 'Cleared',
+        languages: ['Arabic', 'Amharic'],
+        video_url: 'https://sample-video.mp4',
+        avatar_initials: 'BG',
+        avatar_bg: 'bg-amber-600',
+    },
+    {
+        id: 'cand-3',
+        first_name: 'Almaz',
+        last_name: 'Mekonnen',
+        role: 'Executive Chef & Household Cook',
+        experience_years: 3,
+        medical_status: 'Cleared',
+        languages: ['English', 'Amharic'],
+        avatar_initials: 'AM',
+        avatar_bg: 'bg-emerald-800',
+    },
+];
+
+const sampleVacancies: VacancyProps[] = [
+    {
+        id: 'vac-1',
+        title: 'Domestic Worker',
+        country: 'Saudi Arabia',
+        country_flag: '🇸🇦',
+        salary_range: 'SAR 1,200 – 1,600 / month',
+        contract_duration: '2-year contract',
+        employer_type: 'Family Household',
+        positions_available: 2,
+        deadline: '30 Sep 2026',
+        benefits: ['Accommodation', 'Meals Provided', 'Flight Ticket'],
+    },
+    {
+        id: 'vac-2',
+        title: 'Professional Driver',
+        country: 'UAE',
+        country_flag: '🇦🇪',
+        salary_range: 'AED 2,500 – 3,500 / month',
+        contract_duration: '1-year contract',
+        employer_type: 'Corporate Logistics',
+        positions_available: 5,
+        deadline: '15 Oct 2026',
+        benefits: ['Accommodation', 'Health Insurance'],
+    },
+    {
+        id: 'vac-3',
+        title: 'Head Chef / Hospitality Cook',
+        country: 'Qatar',
+        country_flag: '🇶🇦',
+        salary_range: 'QAR 3,000 – 4,500 / month',
+        contract_duration: '2-year contract',
+        employer_type: 'Hotel Group',
+        positions_available: 3,
+        deadline: '20 Oct 2026',
+        benefits: ['Accommodation', 'Overtime Pay'],
+    },
+];
 
 export default function HomeScreen() {
     const router = useRouter();
-    const { user, admin, activeWorkspace } = useAuth();
-    const [featured, setFeatured] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { user, activeWorkspace } = useAuth();
 
-    useEffect(() => {
-        async function load() {
-            try {
-                const res: any = await candidateService.getFeaturedCandidates();
-                setFeatured(res.data?.slice(0, 4) || []);
-            } catch { }
-            setLoading(false);
-        }
-        load();
-    }, []);
+    const [mode, setMode] = useState<'employer' | 'seeker'>('employer');
+    const [activeChip, setActiveChip] = useState('All');
+    const [selectedCandidate, setSelectedCandidate] = useState<CandidateProps | null>(null);
+    const [inquiryModalVisible, setInquiryModalVisible] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    const stats = [
-        { label: 'Verified Candidates', value: '5,000+', icon: Users, color: '#059669' },
-        { label: 'Active Vacancies', value: '320+', icon: Briefcase, color: '#1E3A8A' },
-        { label: 'Licensed Agencies', value: '120+', icon: ShieldCheck, color: '#059669' },
-        { label: 'Countries Served', value: '5', icon: MapPin, color: '#1E3A8A' },
-    ];
-
-    const specializations = [
-        'Housemaid', 'Nanny / Babysitter', 'Private Driver',
-        'Cook / Chef', 'Security Guard', 'Caregiver / Elderly Care',
-    ];
-
-    const renderWorkspaceBanner = () => {
-        const type = activeWorkspace?.type || 'PERSONAL';
-
-        if (type === 'AGENCY') {
-            return (
-                <View className="bg-emerald-900 border border-emerald-800 p-4 rounded-2xl flex-row items-center justify-between shadow-xs">
-                    <View className="flex-row items-center flex-1 mr-2">
-                        <View className="w-9 h-9 rounded-xl bg-emerald-800 items-center justify-center mr-3 border border-emerald-700">
-                            <Building2 size={18} color="#A7F3D0" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-white text-xs font-bold">{activeWorkspace?.name}</Text>
-                            <Text className="text-emerald-200 text-[10px]">Recruitment Agency Workspace • Role: {activeWorkspace?.role}</Text>
-                        </View>
-                    </View>
-                    <Pressable
-                        onPress={() => router.push('/(admin)/dashboard')}
-                        className="bg-emerald-500 px-3.5 py-2 rounded-xl active:opacity-90"
-                    >
-                        <Text className="text-emerald-950 text-xs font-extrabold">9-Stage Pipeline →</Text>
-                    </Pressable>
-                </View>
-            );
-        }
-
-        if (type === 'GULF_EMPLOYER') {
-            return (
-                <View className="bg-blue-950 border border-blue-900 p-4 rounded-2xl flex-row items-center justify-between shadow-xs">
-                    <View className="flex-row items-center flex-1 mr-2">
-                        <View className="w-9 h-9 rounded-xl bg-blue-900 items-center justify-center mr-3 border border-blue-800">
-                            <Building2 size={18} color="#93C5FD" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-white text-xs font-bold">{activeWorkspace?.name}</Text>
-                            <Text className="text-blue-200 text-[10px]">Gulf Employer Portal • Role: {activeWorkspace?.role}</Text>
-                        </View>
-                    </View>
-                    <Pressable
-                        onPress={() => router.push('/(tabs)/vacancies')}
-                        className="bg-blue-500 px-3.5 py-2 rounded-xl active:opacity-90"
-                    >
-                        <Text className="text-white text-xs font-extrabold">Post Job Request →</Text>
-                    </Pressable>
-                </View>
-            );
-        }
-
-        if (type === 'PLATFORM_ADMIN') {
-            return (
-                <View className="bg-purple-950 border border-purple-900 p-4 rounded-2xl flex-row items-center justify-between shadow-xs">
-                    <View className="flex-row items-center flex-1 mr-2">
-                        <View className="w-9 h-9 rounded-xl bg-purple-900 items-center justify-center mr-3 border border-purple-800">
-                            <ShieldCheck size={18} color="#E9D5FF" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-white text-xs font-bold">Platform Super Admin</Text>
-                            <Text className="text-purple-200 text-[10px]">Governance & Organization Verification</Text>
-                        </View>
-                    </View>
-                    <Pressable
-                        onPress={() => router.push('/(admin)/dashboard')}
-                        className="bg-purple-500 px-3.5 py-2 rounded-xl active:opacity-90"
-                    >
-                        <Text className="text-white text-xs font-extrabold">Admin Panel →</Text>
-                    </Pressable>
-                </View>
-            );
-        }
-
-        return (
-            <View className="bg-white border border-slate-200 p-3.5 rounded-2xl flex-row items-center justify-between shadow-xs">
-                <View className="flex-row items-center flex-1 mr-2">
-                    <View className="w-8 h-8 rounded-lg bg-emerald-50 items-center justify-center mr-2.5 border border-emerald-200">
-                        <User size={16} color="#059669" />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-slate-900 text-xs font-bold">Personal Profile / CV Mode</Text>
-                        <Text className="text-slate-500 text-[10px]">Build your CV or join a recruitment agency team.</Text>
-                    </View>
-                </View>
-                <Pressable
-                    onPress={() => router.push(user ? '/(user)/dashboard' : '/(auth)/login')}
-                    className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl"
-                >
-                    <Text className="text-slate-800 text-[11px] font-bold">{user ? 'My CV →' : 'Sign In →'}</Text>
-                </Pressable>
-            </View>
-        );
+    const handleSelectCandidate = (cand: CandidateProps) => {
+        setSelectedCandidate(cand);
+        setInquiryModalVisible(true);
     };
 
+    const categories = ['All', 'Domestic', 'Driver', 'Chef', 'Security', 'Nurse'];
+    const countries = ['All Countries', '🇸🇦 Saudi', '🇦🇪 UAE', '🇶🇦 Qatar', '🇰🇼 Kuwait'];
+
     return (
-        <ScrollView className="flex-1 bg-slate-50">
-            {/* Hero Section */}
-            <View className="px-5 pt-14 pb-6 bg-white border-b border-slate-200 shadow-xs">
-                <View className="flex-row items-center justify-between mb-4">
+        <View className="flex-1 bg-slate-50">
+            {/* Deep Navy Top Header (#0F172A) */}
+            <View className="bg-slate-900 px-5 pt-14 pb-5 shadow-md">
+                <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center flex-1 mr-2">
-                        <View className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 items-center justify-center mr-3">
-                            <ShieldCheck size={22} color="#1E3A8A" strokeWidth={2.5} />
+                        <View className="w-10 h-10 rounded-2xl bg-amber-500 items-center justify-center mr-3 shadow-xs">
+                            <ShieldCheck size={22} color="#0F172A" strokeWidth={2.5} />
                         </View>
-                        <View className="flex-1">
-                            <Text className="text-blue-900 text-xs font-extrabold tracking-widest uppercase">
-                                EthioRecruit SaaS
+                        <View>
+                            <View className="flex-row items-center">
+                                <Text className="text-white text-base font-black tracking-wider uppercase">
+                                    EthioHire
+                                </Text>
+                                <View className="ml-2 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
+                                    <Text className="text-amber-400 text-[9px] font-black uppercase">
+                                        Verified SaaS
+                                    </Text>
+                                </View>
+                            </View>
+                            <Text className="text-slate-400 text-[10px] font-medium mt-0.5">
+                                Ethiopia ↔ Gulf Overseas Recruitment Platform
                             </Text>
-                            <Text className="text-slate-500 text-[10px] font-medium">Unified Recruitment Platform</Text>
                         </View>
                     </View>
 
-                    {/* Dynamic Workspace Switcher Dropdown */}
-                    <WorkspaceSwitcher />
-                </View>
-
-                <Text className="text-slate-900 text-2xl font-extrabold leading-tight">
-                    Ethiopia's Premier{'\n'}Recruitment Platform
-                </Text>
-                <Text className="text-slate-600 text-xs mt-2 leading-5 font-medium">
-                    Connecting verified Ethiopian manpower agencies with Gulf employers through a trusted, transparent marketplace.
-                </Text>
-
-                {/* Dynamic Action Buttons */}
-                <View className="flex-row gap-3 mt-5">
+                    {/* Admin Direct Gateway Button */}
                     <Pressable
-                        onPress={() => router.push('/(tabs)/candidates')}
-                        className="flex-1 bg-emerald-600 py-3 rounded-xl items-center shadow-xs active:opacity-90"
+                        onPress={() => router.push('/(admin)/dashboard')}
+                        className="bg-amber-500 px-3 py-1.5 rounded-full flex-row items-center gap-1 active:opacity-90 shadow-sm"
                     >
-                        <Text className="text-white text-xs font-extrabold">Browse Candidates</Text>
+                        <Lock size={12} color="#0F172A" />
+                        <Text className="text-slate-950 text-[11px] font-black">Agency Admin</Text>
                     </Pressable>
-                    <Pressable
-                        onPress={() => router.push('/(tabs)/vacancies')}
-                        className="flex-1 bg-blue-900 py-3 rounded-xl items-center shadow-xs active:opacity-90"
+                </View>
+
+                {/* Role Switcher Pill Bar */}
+                <View className="mt-3">
+                    <RoleToggle mode={mode} onSelectMode={(m) => setMode(m)} />
+                </View>
+            </View>
+
+            {/* Context Mode Banner */}
+            <View
+                className={`px-5 py-2.5 flex-row items-center justify-between ${mode === 'employer' ? 'bg-slate-900 border-b border-slate-800' : 'bg-amber-100 border-b border-amber-200'
+                    }`}
+            >
+                <View className="flex-row items-center gap-2">
+                    {mode === 'employer' ? (
+                        <Building2 size={16} color="#F59E0B" />
+                    ) : (
+                        <Briefcase size={16} color="#D97706" />
+                    )}
+                    <Text
+                        className={`text-xs font-extrabold ${mode === 'employer' ? 'text-white' : 'text-amber-950'
+                            }`}
                     >
-                        <Text className="text-white text-xs font-bold">Browse Jobs</Text>
-                    </Pressable>
+                        {mode === 'employer'
+                            ? 'Employer Mode — Browsing Cleared Candidates'
+                            : 'Job Seeker Mode — Browsing Overseas Vacancies'}
+                    </Text>
+                </View>
+                <View className="bg-white/20 px-2 py-0.5 rounded-md">
+                    <Text
+                        className={`text-[10px] font-bold ${mode === 'employer' ? 'text-amber-400' : 'text-amber-900'
+                            }`}
+                    >
+                        Verified
+                    </Text>
                 </View>
             </View>
 
-            {/* Role Navigation Quick Banner */}
-            <View className="px-5 pt-4">
-                {renderWorkspaceBanner()}
-            </View>
+            {/* Main Content Area */}
+            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+                {/* Search Bar */}
+                <View className="px-5 pt-4">
+                    <View className="bg-white border border-slate-200 rounded-full px-4 py-3 flex-row items-center shadow-xs">
+                        <Search size={18} color="#94A3B8" />
+                        <TextInput
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholder={
+                                mode === 'employer'
+                                    ? 'Search candidates by skill, experience, Arabic speaking…'
+                                    : 'Search jobs by country, salary, domestic worker…'
+                            }
+                            className="flex-1 ml-2 text-slate-900 text-sm font-medium"
+                        />
+                    </View>
+                </View>
 
-            {/* Stats Grid */}
-            <View className="px-5 my-5">
-                <View className="flex-row flex-wrap gap-3">
-                    {stats.map((stat) => (
-                        <View
-                            key={stat.label}
-                            className="flex-1 min-w-[45%] bg-white border border-slate-200 p-4 rounded-2xl shadow-xs"
-                        >
-                            <View className="w-8 h-8 rounded-lg bg-slate-50 items-center justify-center mb-2">
-                                <stat.icon size={18} color={stat.color} />
-                            </View>
-                            <Text className="text-slate-900 text-xl font-extrabold">{stat.value}</Text>
-                            <Text className="text-slate-600 text-[10px] font-bold mt-0.5">{stat.label}</Text>
+                {/* Filter Chips Bar */}
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    className="px-5 my-3"
+                >
+                    {(mode === 'employer' ? categories : countries).map((chip) => {
+                        const isActive = activeChip === chip;
+                        return (
+                            <Pressable
+                                key={chip}
+                                onPress={() => setActiveChip(chip)}
+                                className={`mr-2 px-4 py-2 rounded-full border ${isActive
+                                    ? 'bg-slate-900 border-slate-900'
+                                    : 'bg-white border-slate-200'
+                                    }`}
+                            >
+                                <Text
+                                    className={`text-xs font-bold ${isActive ? 'text-amber-400 font-black' : 'text-slate-600'
+                                        }`}
+                                >
+                                    {chip}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </ScrollView>
+
+                {/* Content Section */}
+                {mode === 'employer' ? (
+                    <View className="px-5 pb-10">
+                        <View className="flex-row items-center justify-between mb-3">
+                            <Text className="text-slate-900 text-sm font-black uppercase tracking-wider">
+                                Featured Verified Candidates
+                            </Text>
+                            <Text className="text-emerald-700 text-xs font-bold">
+                                {sampleCandidates.length} Cleared
+                            </Text>
                         </View>
-                    ))}
-                </View>
-            </View>
 
-            {/* Specializations */}
-            <View className="px-5 mb-6">
-                <Text className="text-slate-900 text-base font-extrabold mb-3">Job Specializations</Text>
-                <View className="flex-row flex-wrap gap-2">
-                    {specializations.map((spec) => (
-                        <View key={spec} className="bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl">
-                            <Text className="text-emerald-800 text-[11px] font-bold">{spec}</Text>
-                        </View>
-                    ))}
-                </View>
-            </View>
-
-            {/* Featured Candidates */}
-            <View className="px-5 mb-6">
-                <View className="flex-row items-center justify-between mb-3">
-                    <Text className="text-slate-900 text-base font-extrabold">Featured Candidates</Text>
-                    <Pressable onPress={() => router.push('/(tabs)/candidates')} className="flex-row items-center">
-                        <Text className="text-blue-900 text-xs font-bold mr-1">View All</Text>
-                        <ArrowRight size={14} color="#1E3A8A" />
-                    </Pressable>
-                </View>
-
-                {loading ? (
-                    <ActivityIndicator color="#059669" size="large" />
-                ) : featured.length === 0 ? (
-                    <View className="bg-white border border-slate-200 p-8 rounded-2xl items-center shadow-xs">
-                        <Users size={28} color="#94A3B8" />
-                        <Text className="text-slate-600 text-xs font-medium mt-2">No featured candidates yet</Text>
+                        {sampleCandidates.map((cand) => (
+                            <CandidateCard
+                                key={cand.id}
+                                candidate={cand}
+                                onPress={() => handleSelectCandidate(cand)}
+                                onVideoPress={() => handleSelectCandidate(cand)}
+                            />
+                        ))}
                     </View>
                 ) : (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-3">
-                        {featured.map((cand: any) => (
-                            <View key={cand.id} className="bg-white border border-slate-200 rounded-2xl p-4 mr-3 w-48 shadow-xs">
-                                <View className="flex-row items-center gap-2 mb-2">
-                                    <View className="w-9 h-9 rounded-full bg-blue-100 items-center justify-center">
-                                        <Text className="text-blue-950 text-sm font-bold">
-                                            {cand.first_name?.[0]}{cand.last_name?.[0]}
-                                        </Text>
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-slate-900 text-xs font-bold" numberOfLines={1}>
-                                            {cand.first_name} {cand.last_name}
-                                        </Text>
-                                        <Text className="text-emerald-700 text-[10px] font-bold" numberOfLines={1}>
-                                            {cand.category_name || 'Housemaid'}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <View className="flex-row items-center gap-1">
-                                    <CheckCircle2 size={12} color="#059669" />
-                                    <Text className="text-[10px] text-emerald-800 font-bold">Verified Medical</Text>
-                                </View>
-                            </View>
-                        ))}
-                    </ScrollView>
-                )}
-            </View>
-
-            {/* Gulf Countries */}
-            <View className="px-5 mb-10">
-                <Text className="text-slate-900 text-base font-extrabold mb-3">Recruitment Corridors</Text>
-                <View className="flex-row flex-wrap gap-2">
-                    {['🇦🇪 UAE', '🇸🇦 Saudi Arabia', '🇶🇦 Qatar', '🇰🇼 Kuwait', '🇴🇲 Oman'].map((country) => (
-                        <View key={country} className="bg-white border border-slate-200 px-4 py-2.5 rounded-xl shadow-xs">
-                            <Text className="text-slate-900 text-xs font-bold">{country}</Text>
+                    <View className="px-5 pb-10">
+                        <View className="flex-row items-center justify-between mb-3">
+                            <Text className="text-slate-900 text-sm font-black uppercase tracking-wider">
+                                Latest Overseas Job Vacancies
+                            </Text>
+                            <Text className="text-amber-700 text-xs font-bold">
+                                {sampleVacancies.length} Verified
+                            </Text>
                         </View>
-                    ))}
-                </View>
-            </View>
-        </ScrollView>
+
+                        {sampleVacancies.map((vac) => (
+                            <VacancyCard
+                                key={vac.id}
+                                vacancy={vac}
+                                onPress={() => {
+                                    router.push('/(user)/dashboard');
+                                }}
+                            />
+                        ))}
+                    </View>
+                )}
+            </ScrollView>
+
+            {/* Direct Inquiry Modal */}
+            <InquiryModal
+                visible={inquiryModalVisible}
+                candidate={selectedCandidate}
+                onClose={() => setInquiryModalVisible(false)}
+                onSuccess={() => { }}
+            />
+        </View>
     );
 }
+
