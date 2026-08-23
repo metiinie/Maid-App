@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ShieldCheck, Users, Briefcase, MapPin, ArrowRight, CheckCircle2, User, Building2 } from 'lucide-react-native';
+import { ShieldCheck, Users, Briefcase, MapPin, ArrowRight, CheckCircle2, User, Building2, LogIn } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { candidateService } from '../../services/candidateService';
 
@@ -38,15 +38,45 @@ export default function HomeScreen() {
         <ScrollView className="flex-1 bg-slate-50">
             {/* Hero Section */}
             <View className="px-5 pt-14 pb-6 bg-white border-b border-slate-200 shadow-xs">
-                <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 items-center justify-center mr-3">
                             <ShieldCheck size={22} color="#1E3A8A" strokeWidth={2.5} />
                         </View>
-                        <Text className="text-blue-900 text-xs font-extrabold tracking-widest uppercase">
-                            EthioRecruit Platform
-                        </Text>
+                        <View>
+                            <Text className="text-blue-900 text-xs font-extrabold tracking-widest uppercase">
+                                EthioRecruit Platform
+                            </Text>
+                            <Text className="text-slate-500 text-[10px] font-medium">Public User Directory</Text>
+                        </View>
                     </View>
+
+                    {/* Role Status Badge / Auth Action */}
+                    {admin ? (
+                        <Pressable
+                            onPress={() => router.push('/(admin)/dashboard')}
+                            className="bg-blue-900 px-3 py-1.5 rounded-full flex-row items-center gap-1 shadow-xs"
+                        >
+                            <Building2 size={12} color="#FFFFFF" />
+                            <Text className="text-white text-[11px] font-extrabold">Admin Dashboard</Text>
+                        </Pressable>
+                    ) : user ? (
+                        <Pressable
+                            onPress={() => router.push('/(user)/dashboard')}
+                            className="bg-emerald-600 px-3 py-1.5 rounded-full flex-row items-center gap-1 shadow-xs"
+                        >
+                            <User size={12} color="#FFFFFF" />
+                            <Text className="text-white text-[11px] font-extrabold">My Dashboard</Text>
+                        </Pressable>
+                    ) : (
+                        <Pressable
+                            onPress={() => router.push('/(auth)/login')}
+                            className="bg-blue-900 px-3.5 py-1.5 rounded-full flex-row items-center gap-1 shadow-xs"
+                        >
+                            <LogIn size={12} color="#FFFFFF" />
+                            <Text className="text-white text-[11px] font-extrabold">Sign In</Text>
+                        </Pressable>
+                    )}
                 </View>
 
                 <Text className="text-slate-900 text-2xl font-extrabold leading-tight">
@@ -56,29 +86,8 @@ export default function HomeScreen() {
                     Connecting verified Ethiopian manpower agencies with Gulf employers through a trusted, transparent marketplace.
                 </Text>
 
-                {/* PROMINENT ROLE SWITCHER BAR */}
-                <View className="mt-5 p-3 bg-slate-100 rounded-2xl border border-slate-200">
-                    <Text className="text-slate-900 text-xs font-extrabold mb-2">Switch View / Portals:</Text>
-                    <View className="flex-row gap-2">
-                        <Pressable
-                            onPress={() => router.push('/(user)/dashboard')}
-                            className="flex-1 bg-white border border-slate-200 p-2.5 rounded-xl flex-row items-center justify-center shadow-xs active:opacity-90"
-                        >
-                            <User size={16} color="#059669" />
-                            <Text className="text-slate-900 text-xs font-bold ml-1.5">👤 User Portal</Text>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => router.push('/(admin)/dashboard')}
-                            className="flex-1 bg-blue-900 p-2.5 rounded-xl flex-row items-center justify-center shadow-xs active:opacity-90"
-                        >
-                            <Building2 size={16} color="#FFFFFF" />
-                            <Text className="text-white text-xs font-bold ml-1.5">🏢 Admin Portal</Text>
-                        </Pressable>
-                    </View>
-                </View>
-
-                {/* CTA Buttons */}
-                <View className="flex-row gap-3 mt-4">
+                {/* Dynamic Action Buttons */}
+                <View className="flex-row gap-3 mt-5">
                     <Pressable
                         onPress={() => router.push('/(tabs)/candidates')}
                         className="flex-1 bg-emerald-600 py-3 rounded-xl items-center shadow-xs active:opacity-90"
@@ -87,15 +96,36 @@ export default function HomeScreen() {
                     </Pressable>
                     <Pressable
                         onPress={() => router.push('/(tabs)/vacancies')}
-                        className="flex-1 bg-white border border-slate-200 py-3 rounded-xl items-center shadow-xs active:opacity-90"
+                        className="flex-1 bg-blue-900 py-3 rounded-xl items-center shadow-xs active:opacity-90"
                     >
-                        <Text className="text-slate-900 text-xs font-bold">Browse Jobs</Text>
+                        <Text className="text-white text-xs font-bold">Browse Jobs</Text>
+                    </Pressable>
+                </View>
+            </View>
+
+            {/* Role Navigation Quick Banner */}
+            <View className="px-5 pt-4">
+                <View className="bg-white border border-slate-200 p-3.5 rounded-2xl flex-row items-center justify-between shadow-xs">
+                    <View className="flex-row items-center flex-1 mr-2">
+                        <View className="w-8 h-8 rounded-lg bg-emerald-50 items-center justify-center mr-2.5 border border-emerald-200">
+                            <User size={16} color="#059669" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-slate-900 text-xs font-bold">Need Agency Access?</Text>
+                            <Text className="text-slate-500 text-[10px]">Log in as Agency Admin to access 5-Stage Kanban board.</Text>
+                        </View>
+                    </View>
+                    <Pressable
+                        onPress={() => router.push('/(auth)/login')}
+                        className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl"
+                    >
+                        <Text className="text-slate-800 text-[11px] font-bold">Admin Login →</Text>
                     </Pressable>
                 </View>
             </View>
 
             {/* Stats Grid */}
-            <View className="px-5 my-6">
+            <View className="px-5 my-5">
                 <View className="flex-row flex-wrap gap-3">
                     {stats.map((stat) => (
                         <View
