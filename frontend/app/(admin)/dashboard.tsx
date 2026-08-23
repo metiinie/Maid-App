@@ -920,43 +920,105 @@ export default function AdminDashboard() {
                     {/* BILLING TAB */}
                     {activeTab === 'billing' && (
                         <View>
-                            {/* Current Active Plan Status */}
-                            <View className="bg-slate-900 p-5 rounded-3xl mb-4 border border-slate-800 shadow-md">
+                            {/* Current Active Plan Status Card */}
+                            <View className="bg-slate-900 p-5 rounded-3xl mb-5 border border-slate-800 shadow-md">
                                 <View className="flex-row items-center justify-between mb-2">
-                                    <Text className="text-white text-base font-black">Active Agency License</Text>
-                                    <View className="bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
+                                    <View className="flex-row items-center gap-2">
+                                        <View className="w-8 h-8 rounded-xl bg-amber-500 items-center justify-center">
+                                            <CreditCard size={18} color="#0F172A" />
+                                        </View>
+                                        <View>
+                                            <Text className="text-white text-base font-black">Active Agency License</Text>
+                                            <Text className="text-amber-400 text-xs font-bold">MOLSA Accreditation: MOLSA/LIC/2024/849</Text>
+                                        </View>
+                                    </View>
+
+                                    <View className="bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-1 rounded-full">
                                         <Text className="text-emerald-400 text-[10px] font-black uppercase">ACTIVE SAAS</Text>
                                     </View>
                                 </View>
-                                <Text className="text-amber-400 text-xs font-bold">MOLSA Accreditation: MOLSA/LIC/2024/849</Text>
-                                <Text className="text-slate-400 text-xs mt-1 font-medium">
-                                    Enterprise Overseas Recruitment SaaS Plan • Active until Dec 2026
+
+                                <View className="bg-slate-800/80 p-3 rounded-2xl border border-slate-700/80 my-2 gap-1.5">
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-slate-400 text-xs font-medium">Plan Level:</Text>
+                                        <Text className="text-amber-400 text-xs font-extrabold">Pro Overseas Agency SaaS</Text>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-slate-400 text-xs font-medium">Listing Quota:</Text>
+                                        <Text className="text-white text-xs font-bold">{candidates.length} / 100 Candidates Published</Text>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-slate-400 text-xs font-medium">Last Tx Ref:</Text>
+                                        <Text className="text-emerald-400 text-xs font-extrabold">CHAPA-TX-849102</Text>
+                                    </View>
+                                </View>
+
+                                <Text className="text-slate-400 text-[11px] font-medium text-center mt-1">
+                                    Enterprise Overseas Recruitment SaaS Plan • Renews Dec 31, 2026
                                 </Text>
                             </View>
 
-                            <Text className="text-slate-900 text-sm font-bold mb-3">
-                                Available Agency Subscription Plans
-                            </Text>
+                            <View className="flex-row items-center justify-between mb-3">
+                                <Text className="text-slate-900 text-base font-extrabold">
+                                    Agency Subscription Plans
+                                </Text>
+                                <View className="bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                                    <Text className="text-amber-900 text-[10px] font-black">Chapa Direct Gateway</Text>
+                                </View>
+                            </View>
+
                             {plans.map((plan: any) => (
                                 <View
                                     key={plan.id}
-                                    className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 shadow-xs"
+                                    className={`bg-white border rounded-3xl p-5 mb-4 shadow-xs ${plan.recommended ? 'border-amber-500 border-2' : 'border-slate-200'
+                                        }`}
                                 >
-                                    <Text className="text-amber-700 text-xs font-extrabold uppercase tracking-wider">
-                                        {plan.code}
-                                    </Text>
-                                    <Text className="text-slate-900 text-base font-bold mt-1">
-                                        {plan.name}
-                                    </Text>
-                                    <Text className="text-slate-900 text-xl font-black mt-1">
-                                        {plan.price_etb}{' '}
-                                        <Text className="text-xs text-slate-500 font-normal">ETB/mo</Text>
-                                    </Text>
+                                    {plan.recommended && (
+                                        <View className="bg-amber-500 px-3 py-1 rounded-full self-start mb-2">
+                                            <Text className="text-slate-950 text-[10px] font-black uppercase">Most Popular for Agencies</Text>
+                                        </View>
+                                    )}
+
+                                    <View className="flex-row justify-between items-start">
+                                        <View className="flex-1 mr-2">
+                                            <Text className="text-amber-700 text-[10px] font-black uppercase tracking-wider">
+                                                {plan.code}
+                                            </Text>
+                                            <Text className="text-slate-900 text-base font-extrabold mt-0.5">
+                                                {plan.name}
+                                            </Text>
+                                        </View>
+
+                                        <View className="items-end">
+                                            <Text className="text-slate-900 text-xl font-black">
+                                                {plan.price_etb?.toLocaleString()}
+                                            </Text>
+                                            <Text className="text-[10px] text-slate-500 font-bold uppercase">ETB / Month</Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Features Checklist */}
+                                    <View className="bg-slate-50 p-3 rounded-2xl border border-slate-100 my-3 gap-2">
+                                        {(plan.features || [
+                                            'Up to 100 Candidate Listings',
+                                            '9-Stage Government ATS Pipeline',
+                                            'MOLSA Compliance Verification',
+                                        ]).map((feat: string, fIdx: number) => (
+                                            <View key={fIdx} className="flex-row items-center gap-2">
+                                                <View className="w-4 h-4 rounded-full bg-emerald-100 items-center justify-center">
+                                                    <Check size={10} color="#059669" />
+                                                </View>
+                                                <Text className="text-slate-700 text-xs font-semibold flex-1">{feat}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+
                                     <Pressable
                                         onPress={() => checkout(plan.id)}
-                                        className="mt-4 bg-amber-500 py-3 rounded-full items-center active:opacity-90 shadow-xs"
+                                        className="bg-amber-500 py-3.5 rounded-full items-center active:opacity-90 shadow-sm flex-row justify-center gap-2"
                                     >
-                                        <Text className="text-slate-950 text-xs font-black uppercase">Checkout with Chapa</Text>
+                                        <CreditCard size={16} color="#0F172A" />
+                                        <Text className="text-slate-950 text-xs font-black uppercase">Checkout via Chapa Gateway</Text>
                                     </Pressable>
                                 </View>
                             ))}
