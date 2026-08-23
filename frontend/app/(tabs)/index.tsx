@@ -172,23 +172,7 @@ export default function HomeScreen() {
 
             {/* Role Navigation Quick Banner */}
             <View className="px-5 pt-4">
-                <View className="bg-white border border-slate-200 p-3.5 rounded-2xl flex-row items-center justify-between shadow-xs">
-                    <View className="flex-row items-center flex-1 mr-2">
-                        <View className="w-8 h-8 rounded-lg bg-emerald-50 items-center justify-center mr-2.5 border border-emerald-200">
-                            <User size={16} color="#059669" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-slate-900 text-xs font-bold">Need Agency Access?</Text>
-                            <Text className="text-slate-500 text-[10px]">Log in as Agency Admin to access 5-Stage Kanban board.</Text>
-                        </View>
-                    </View>
-                    <Pressable
-                        onPress={() => router.push('/(auth)/login')}
-                        className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl"
-                    >
-                        <Text className="text-slate-800 text-[11px] font-bold">Admin Login →</Text>
-                    </Pressable>
-                </View>
+                {renderWorkspaceBanner()}
             </View>
 
             {/* Stats Grid */}
