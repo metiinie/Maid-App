@@ -225,6 +225,72 @@ export default function AdminDashboard() {
         },
     ];
 
+    const [selectedStageFilter, setSelectedStageFilter] = useState('ALL');
+    const [selectedPipeline, setSelectedPipeline] = useState<any>(null);
+
+    const sampleAdminPipelines = [
+        {
+            id: 'pipe-admin-1',
+            candidate_id: 'cand-admin-1',
+            candidate_name: 'Alem Tadesse',
+            candidate_code: 'ET-8492',
+            employer_name: 'Al-Harbi Household',
+            target_country: 'Saudi Arabia',
+            current_stage: 'MEDICAL_GAMCA',
+            stage_number: 2,
+            stage_label: 'GAMCA Medical Exam',
+            medical_result: 'Fit for Duty',
+            passport_number: 'EP-849201',
+            last_updated: '2026-08-23',
+            notes: 'GAMCA medical passed at Addis Ababa clinic. Pending embassy attestation.',
+        },
+        {
+            id: 'pipe-admin-2',
+            candidate_id: 'cand-admin-2',
+            candidate_name: 'Tigist Assefa',
+            candidate_code: 'ET-8493',
+            employer_name: 'Al-Mansoori Residence',
+            target_country: 'UAE',
+            current_stage: 'EMBASSY_SUBMISSION',
+            stage_number: 3,
+            stage_label: 'Embassy Contract Attestation',
+            medical_result: 'Cleared',
+            passport_number: 'EP-849302',
+            last_updated: '2026-08-22',
+            notes: 'Contract submitted to UAE Embassy in Addis Ababa for visa stamp approval.',
+        },
+        {
+            id: 'pipe-admin-3',
+            candidate_id: 'cand-admin-3',
+            candidate_name: 'Genet Haile',
+            candidate_code: 'ET-8494',
+            employer_name: 'Al-Sabah Household',
+            target_country: 'Kuwait',
+            current_stage: 'ENJAZ_VISA',
+            stage_number: 4,
+            stage_label: 'Enjaz Visa Stamping',
+            medical_result: 'Cleared',
+            passport_number: 'EP-849403',
+            last_updated: '2026-08-21',
+            notes: 'Enjaz visa reference generated. Awaiting embassy biometric verification.',
+        },
+        {
+            id: 'pipe-admin-4',
+            candidate_id: 'cand-admin-4',
+            candidate_name: 'Meskerm Bekele',
+            candidate_code: 'ET-8495',
+            employer_name: 'Al-Thani Residence',
+            target_country: 'Qatar',
+            current_stage: 'COC_TRAINING',
+            stage_number: 5,
+            stage_label: 'MOLSA COC Skill Certificate',
+            medical_result: 'Cleared',
+            passport_number: 'EP-849504',
+            last_updated: '2026-08-20',
+            notes: 'Passed 30-day MOLSA pre-departure housekeeping & care training course.',
+        },
+    ];
+
     async function loadData() {
         setLoading(true);
         try {
@@ -237,14 +303,16 @@ export default function AdminDashboard() {
             ]);
             const fetchedCandidates = cRes.data || [];
             const fetchedVacancies = vRes.data || [];
+            const fetchedPipelines = pRes.data || [];
             setCandidates(fetchedCandidates.length > 0 ? fetchedCandidates : sampleAdminCandidates);
             setVacancies(fetchedVacancies.length > 0 ? fetchedVacancies : sampleAdminVacancies);
-            setPipelines(pRes.data || []);
+            setPipelines(fetchedPipelines.length > 0 ? fetchedPipelines : sampleAdminPipelines);
             setSubscription(sRes.data || null);
             setPlans(plRes.data || []);
         } catch (e) {
             setCandidates(sampleAdminCandidates);
             setVacancies(sampleAdminVacancies);
+            setPipelines(sampleAdminPipelines);
         }
         setLoading(false);
     }
@@ -707,41 +775,116 @@ export default function AdminDashboard() {
                     {/* PIPELINES TAB */}
                     {activeTab === 'pipelines' && (
                         <View>
-                            {pipelines.map((p: any) => (
-                                <View
-                                    key={p.id}
-                                    className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
-                                >
-                                    <View className="flex-row items-center justify-between mb-1">
-                                        <Text className="text-slate-900 text-sm font-extrabold">
-                                            {p.candidate_name || 'Alem Tadesse'}
+                            {/* Stage Filter Chips */}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3.5 flex-row">
+                                {['ALL', 'Medical Exam', 'Embassy', 'Enjaz Visa', 'COC Training'].map((stg) => (
+                                    <Pressable
+                                        key={stg}
+                                        onPress={() => setSelectedStageFilter(stg)}
+                                        className={`px-3 py-1.5 rounded-full mr-2 border ${selectedStageFilter === stg
+                                            ? 'bg-amber-500 border-amber-600'
+                                            : 'bg-white border-slate-200'
+                                            }`}
+                                    >
+                                        <Text
+                                            className={`text-[11px] font-extrabold ${selectedStageFilter === stg ? 'text-slate-950' : 'text-slate-700'
+                                                }`}
+                                        >
+                                            {stg}
                                         </Text>
-                                        <View className="bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md">
-                                            <Text className="text-blue-900 text-[10px] font-extrabold">Ref #ET-8492</Text>
-                                        </View>
-                                    </View>
-                                    <Text className="text-slate-700 text-xs font-medium mt-0.5">
-                                        Employer: <Text className="font-bold text-slate-900">{p.employer_name || 'Al-Harbi Family'}</Text>
-                                    </Text>
-                                    <Text className="text-slate-500 text-xs mt-0.5 font-medium">
-                                        Current Milestone: <Text className="text-amber-700 font-black">{p.current_stage?.replace('_', ' ') || 'UNDER REVIEW'}</Text>
-                                    </Text>
+                                    </Pressable>
+                                ))}
+                            </ScrollView>
 
-                                    {stageFlow
-                                        .filter((s) => s.from === (p.current_stage || 'UNDER_REVIEW'))
-                                        .map((s) => (
-                                            <Pressable
-                                                key={s.to}
-                                                onPress={() => advanceStage(p.id, s.to)}
-                                                className="mt-3 bg-slate-900 py-2.5 rounded-xl items-center active:opacity-90 shadow-xs"
-                                            >
-                                                <Text className="text-amber-400 text-xs font-extrabold">
-                                                    Advance → {s.label}
-                                                </Text>
-                                            </Pressable>
-                                        ))}
+                            <Pressable
+                                onPress={() => router.push('/(admin)/pipeline')}
+                                className="bg-slate-900 border border-slate-800 py-3.5 rounded-2xl items-center flex-row justify-center gap-2 mb-4 shadow-sm active:opacity-90"
+                            >
+                                <GitPullRequest size={18} color="#F59E0B" />
+                                <Text className="text-amber-400 text-xs font-black uppercase">Open Interactive 9-Stage Kanban Board →</Text>
+                            </Pressable>
+
+                            {pipelines
+                                .filter((p) => selectedStageFilter === 'ALL' || (p.stage_label || p.current_stage || '').toLowerCase().includes(selectedStageFilter.toLowerCase()))
+                                .length === 0 ? (
+                                <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-2 shadow-xs">
+                                    <GitPullRequest size={32} color="#94A3B8" />
+                                    <Text className="text-slate-900 text-sm font-bold mt-2">No Active Pipelines Found</Text>
+                                    <Text className="text-slate-500 text-xs text-center mt-1">Deploy candidates from roster to start legal recruitment tracking.</Text>
                                 </View>
-                            ))}
+                            ) : (
+                                pipelines
+                                    .filter((p) => selectedStageFilter === 'ALL' || (p.stage_label || p.current_stage || '').toLowerCase().includes(selectedStageFilter.toLowerCase()))
+                                    .map((p: any) => {
+                                        const currentStageNum = p.stage_number || 2;
+                                        const progressPercent = Math.round((currentStageNum / 9) * 100);
+
+                                        return (
+                                            <View
+                                                key={p.id}
+                                                className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
+                                            >
+                                                <View className="flex-row items-center justify-between pb-2.5 border-b border-slate-100">
+                                                    <View className="flex-1 mr-2">
+                                                        <View className="flex-row items-center gap-1.5 mb-0.5">
+                                                            <View className="bg-slate-900 px-1.5 py-0.5 rounded-md">
+                                                                <Text className="text-amber-400 text-[9px] font-black">{p.candidate_code || 'ET-8492'}</Text>
+                                                            </View>
+                                                            <Text className="text-slate-900 text-sm font-extrabold flex-1" numberOfLines={1}>
+                                                                {p.candidate_name || 'Alem Tadesse'}
+                                                            </Text>
+                                                        </View>
+                                                        <Text className="text-slate-600 text-xs font-semibold">
+                                                            Employer: {p.employer_name || 'Al-Harbi Household'} • {p.target_country || 'Saudi Arabia'}
+                                                        </Text>
+                                                    </View>
+
+                                                    <View className="bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                                        <Text className="text-emerald-800 text-[10px] font-black">{p.medical_result || 'Fit for Duty'}</Text>
+                                                    </View>
+                                                </View>
+
+                                                {/* Visual 9-Stage Progress Bar */}
+                                                <View className="mt-3">
+                                                    <View className="flex-row justify-between items-center mb-1">
+                                                        <Text className="text-slate-700 text-xs font-extrabold">
+                                                            Stage {currentStageNum} of 9: {p.stage_label || (p.current_stage || 'UNDER_REVIEW').replace('_', ' ')}
+                                                        </Text>
+                                                        <Text className="text-amber-700 text-[11px] font-black">{progressPercent}%</Text>
+                                                    </View>
+
+                                                    <View className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex-row">
+                                                        <View style={{ width: `${progressPercent}%` }} className="h-full bg-amber-500 rounded-full" />
+                                                    </View>
+                                                </View>
+
+                                                {/* Actions */}
+                                                <View className="flex-row items-center justify-between mt-3 pt-2.5 border-t border-slate-100">
+                                                    <Pressable
+                                                        onPress={() => setSelectedPipeline(p)}
+                                                        className="bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 active:opacity-80"
+                                                    >
+                                                        <Text className="text-slate-800 text-xs font-bold">Inspect Legal Log</Text>
+                                                    </Pressable>
+
+                                                    {stageFlow
+                                                        .filter((s) => s.from === (p.current_stage || 'UNDER_REVIEW'))
+                                                        .map((s) => (
+                                                            <Pressable
+                                                                key={s.to}
+                                                                onPress={() => advanceStage(p.id, s.to)}
+                                                                className="bg-amber-500 px-3.5 py-1.5 rounded-xl active:opacity-90 shadow-xs"
+                                                            >
+                                                                <Text className="text-slate-950 text-xs font-black">
+                                                                    Advance → {s.label}
+                                                                </Text>
+                                                            </Pressable>
+                                                        ))}
+                                                </View>
+                                            </View>
+                                        );
+                                    })
+                            )}
                         </View>
                     )}
 
@@ -831,6 +974,65 @@ export default function AdminDashboard() {
                                     className="mt-4 bg-slate-900 py-3 rounded-xl items-center"
                                 >
                                     <Text className="text-white text-xs font-bold">Close Inspector</Text>
+                                </Pressable>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Pipeline Legal Log Inspector Modal */}
+            <Modal visible={!!selectedPipeline} animationType="slide" transparent>
+                <View className="flex-1 bg-black/60 justify-center items-center p-5">
+                    <View className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm shadow-xl">
+                        <View className="flex-row items-center justify-between mb-3 pb-3 border-b border-slate-100">
+                            <Text className="text-slate-900 text-base font-extrabold">Pipeline Legal Log</Text>
+                            <Pressable onPress={() => setSelectedPipeline(null)} className="p-1 bg-slate-100 rounded-full">
+                                <X size={18} color="#64748B" />
+                            </Pressable>
+                        </View>
+
+                        {selectedPipeline && (
+                            <View className="gap-2 my-2">
+                                <View className="flex-row items-center gap-1.5 mb-1">
+                                    <View className="bg-slate-900 px-2 py-0.5 rounded-md">
+                                        <Text className="text-amber-400 text-xs font-black">{selectedPipeline.candidate_code || 'ET-8492'}</Text>
+                                    </View>
+                                    <Text className="text-slate-900 text-base font-extrabold flex-1">{selectedPipeline.candidate_name || 'Alem Tadesse'}</Text>
+                                </View>
+
+                                <Text className="text-amber-700 text-xs font-bold">
+                                    Employer: {selectedPipeline.employer_name || 'Al-Harbi Household'} ({selectedPipeline.target_country || 'Saudi Arabia'})
+                                </Text>
+
+                                <View className="bg-slate-50 p-3 rounded-2xl border border-slate-200 gap-2 mt-2">
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-xs text-slate-500 font-medium">Current Milestone:</Text>
+                                        <Text className="text-xs text-amber-700 font-extrabold">{selectedPipeline.stage_label || selectedPipeline.current_stage}</Text>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-xs text-slate-500 font-medium">Stage Progress:</Text>
+                                        <Text className="text-xs text-slate-900 font-bold">Stage {selectedPipeline.stage_number || 2} of 9 Legal Steps</Text>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-xs text-slate-500 font-medium">GAMCA Medical:</Text>
+                                        <Text className="text-xs text-emerald-800 font-extrabold">{selectedPipeline.medical_result || 'Fit for Duty'}</Text>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-xs text-slate-500 font-medium">Passport #:</Text>
+                                        <Text className="text-xs text-blue-900 font-bold">{selectedPipeline.passport_number || 'EP-849201'}</Text>
+                                    </View>
+                                </View>
+
+                                <Text className="text-slate-600 text-xs mt-2 leading-4 font-medium">
+                                    <Text className="font-bold">Latest Audit Note:</Text> {selectedPipeline.notes}
+                                </Text>
+
+                                <Pressable
+                                    onPress={() => setSelectedPipeline(null)}
+                                    className="mt-4 bg-slate-900 py-3 rounded-xl items-center"
+                                >
+                                    <Text className="text-white text-xs font-bold">Close Legal Log</Text>
                                 </Pressable>
                             </View>
                         )}
