@@ -70,4 +70,37 @@ export class CandidatesService {
             },
         });
     }
+
+    async update(id: string, data: any) {
+        const candidate = await this.findOne(id);
+        const { agencyId, ...updateData } = data;
+        return this.prisma.candidate.update({
+            where: { id },
+            data: {
+                ...updateData,
+                dateOfBirth: updateData.dateOfBirth ? new Date(updateData.dateOfBirth) : candidate.dateOfBirth,
+                yearsOfExperience: updateData.yearsOfExperience !== undefined ? Number(updateData.yearsOfExperience) : candidate.yearsOfExperience,
+            },
+        });
+    }
+
+    async remove(id: string) {
+        await this.findOne(id);
+        return this.prisma.candidate.delete({ where: { id } });
+    }
+
+    async findAgencyCandidates(agencyId: string, query?: any) {
+        const where: any = { agencyId };
+        if (query?.search) {
+            where.OR = [
+                { firstName: { contains: query.search, mode: 'insensitive' } },
+                { lastName: { contains: query.search, mode: 'insensitive' } },
+            ];
+        }
+        return this.prisma.candidate.findMany({
+            where,
+            include: { category: true, documents: true, hiringPipelines: true },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
 }

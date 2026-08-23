@@ -44,4 +44,29 @@ export class ConversationsService {
 
         return message;
     }
+
+    async getOrCreateConversation(userId: string, agencyId: string) {
+        let conversation = await this.prisma.conversation.findFirst({
+            where: { userId, agencyId },
+        });
+
+        if (!conversation) {
+            conversation = await this.prisma.conversation.create({
+                data: { userId, agencyId },
+            });
+        }
+
+        return conversation;
+    }
+
+    async getAgencyConversations(agencyId: string) {
+        return this.prisma.conversation.findMany({
+            where: { agencyId },
+            include: {
+                user: { select: { id: true, firstName: true, lastName: true, phone: true } },
+                messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+            },
+            orderBy: { updatedAt: 'desc' },
+        });
+    }
 }

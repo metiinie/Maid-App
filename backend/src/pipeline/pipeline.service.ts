@@ -92,4 +92,22 @@ export class PipelineService {
             },
         });
     }
+
+    async getUserPipelines(userId: string) {
+        return this.prisma.hiringPipeline.findMany({
+            where: {
+                OR: [
+                    { candidate: { inquiries: { some: { userId } } } },
+                    { candidate: { savedCandidates: { some: { userId } } } },
+                ],
+                isActive: true,
+            },
+            include: {
+                agency: { select: { id: true, name: true, logoUrl: true, phone: true } },
+                candidate: { select: { id: true, firstName: true, lastName: true, photoUrl: true, category: true } },
+                stageHistory: { orderBy: { enteredAt: 'desc' } },
+            },
+            orderBy: { updatedAt: 'desc' },
+        });
+    }
 }

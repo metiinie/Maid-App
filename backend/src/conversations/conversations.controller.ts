@@ -16,6 +16,13 @@ export class ConversationsController {
         return this.conversationsService.getUserConversations(req.user.sub || req.user.id);
     }
 
+    @Post()
+    @ApiOperation({ summary: 'Initialize or retrieve conversation thread with an agency' })
+    async getOrCreateConversation(@Req() req: any, @Body() body: { agencyId: string }) {
+        const userId = req.user.sub || req.user.id;
+        return this.conversationsService.getOrCreateConversation(userId, body.agencyId);
+    }
+
     @Get(':id/messages')
     @ApiOperation({ summary: 'Get messages for thread' })
     async getMessages(@Param('id') id: string) {

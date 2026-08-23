@@ -10,6 +10,7 @@ import { InquiriesModule } from './inquiries/inquiries.module';
 import { SavedModule } from './saved/saved.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ConversationsModule } from './conversations/conversations.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { StaffModule } from './staff/staff.module';
 import { SettingsModule } from './settings/settings.module';
 import { MediaService } from './media/media.service';
@@ -31,6 +32,7 @@ import { PushNotificationService } from './notifications/push.service';
         SavedModule,
         PipelineModule,
         ConversationsModule,
+        NotificationsModule,
         StaffModule,
         SettingsModule,
     ],
