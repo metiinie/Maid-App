@@ -94,15 +94,22 @@ const sampleVacancies: VacancyProps[] = [
 
 export default function HomeScreen() {
     const router = useRouter();
-    const { user, activeWorkspace } = useAuth();
+    const { user, admin, activeWorkspace } = useAuth();
 
-    const [mode, setMode] = useState<'employer' | 'seeker'>('employer');
+    // Mode is derived from active workspace or defaults to employer
+    const mode = activeWorkspace?.type === 'GULF_EMPLOYER' ? 'employer' : 'seeker';
     const [activeChip, setActiveChip] = useState('All');
     const [selectedCandidate, setSelectedCandidate] = useState<CandidateProps | null>(null);
     const [inquiryModalVisible, setInquiryModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
+    const isAuthenticated = !!user || !!admin;
+
     const handleSelectCandidate = (cand: CandidateProps) => {
+        if (!isAuthenticated) {
+            router.push('/(auth)/login');
+            return;
+        }
         setSelectedCandidate(cand);
         setInquiryModalVisible(true);
     };
@@ -136,19 +143,12 @@ export default function HomeScreen() {
                         </View>
                     </View>
 
-                    {/* Admin Direct Gateway Button */}
-                    <Pressable
-                        onPress={() => router.push('/(admin)/dashboard')}
-                        className="bg-amber-500 px-3 py-1.5 rounded-full flex-row items-center gap-1 active:opacity-90 shadow-sm"
-                    >
-                        <Lock size={12} color="#0F172A" />
-                        <Text className="text-slate-950 text-[11px] font-black">Agency Admin</Text>
-                    </Pressable>
-                </View>
-
-                {/* Role Switcher Pill Bar */}
-                <View className="mt-3">
-                    <RoleToggle mode={mode} onSelectMode={(m) => setMode(m)} />
+                    {/* Mode Context Badge */}
+                    <View className="bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-full">
+                        <Text className="text-amber-400 text-[10px] font-black uppercase">
+                            {mode === 'employer' ? 'EMPLOYER FEED' : 'JOB SEEKER FEED'}
+                        </Text>
+                    </View>
                 </View>
             </View>
 
@@ -172,15 +172,31 @@ export default function HomeScreen() {
                             : 'Job Seeker Mode — Browsing Overseas Vacancies'}
                     </Text>
                 </View>
-                <View className="bg-white/20 px-2 py-0.5 rounded-md">
+                <Pressable onPress={() => router.push('/(tabs)/profile')} className="bg-white/20 px-2 py-0.5 rounded-md">
                     <Text
                         className={`text-[10px] font-bold ${mode === 'employer' ? 'text-amber-400' : 'text-amber-900'
                             }`}
                     >
-                        Verified
+                        Switch Role →
                     </Text>
-                </View>
+                </Pressable>
             </View>
+
+            {/* Unauthenticated Guest Sign-In Banner */}
+            {!isAuthenticated && (
+                <View className="bg-amber-500 px-5 py-3 flex-row items-center justify-between">
+                    <View className="flex-1 mr-2">
+                        <Text className="text-slate-950 text-xs font-black">Sign in to contact agencies & apply</Text>
+                        <Text className="text-slate-900 text-[10px] font-semibold">Access verified candidate videos & job demand orders</Text>
+                    </View>
+                    <Pressable
+                        onPress={() => router.push('/(auth)/login')}
+                        className="bg-slate-900 px-3.5 py-1.5 rounded-full"
+                    >
+                        <Text className="text-amber-400 text-xs font-black">Sign In</Text>
+                    </Pressable>
+                </View>
+            )}
 
             {/* Main Content Area */}
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>

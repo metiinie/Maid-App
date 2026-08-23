@@ -6,15 +6,24 @@ import { useAuth } from '../../context/AuthContext';
 import { RoleToggle } from '../../components/RoleToggle';
 
 export default function ProfileScreen() {
-    const { user, admin, logoutUser, logoutAdmin, activeWorkspace } = useAuth();
+    const { user, admin, logoutUser, logoutAdmin, activeWorkspace, switchWorkspace, workspaces } = useAuth();
     const router = useRouter();
 
-    const isEmployer = activeWorkspace?.type === 'GULF_EMPLOYER';
+    const currentMode = activeWorkspace?.type === 'GULF_EMPLOYER' ? 'employer' : 'seeker';
+
+    const handleSelectMode = async (newMode: 'employer' | 'seeker') => {
+        const targetType = newMode === 'employer' ? 'GULF_EMPLOYER' : 'PERSONAL';
+        const target = workspaces.find((w) => w.type === targetType) || workspaces[0];
+        if (target) {
+            await switchWorkspace(target.id);
+        }
+    };
+
     const isAgency = activeWorkspace?.type === 'AGENCY';
     const isAdmin = !!admin;
 
     return (
-        <ScrollView className="flex-1 bg-slate-950" contentContainerStyle={{ pb: 100 }}>
+        <ScrollView className="flex-1 bg-slate-950" contentContainerStyle={{ paddingBottom: 100 }}>
             {/* Profile Top Bar Header */}
             <View className="bg-slate-900 px-5 pt-14 pb-6 border-b border-slate-800 shadow-xl">
                 <View className="flex-row items-center justify-between">
@@ -60,7 +69,7 @@ export default function ProfileScreen() {
 
                     {/* Embed RoleToggle Component */}
                     <View className="items-center">
-                        <RoleToggle />
+                        <RoleToggle mode={currentMode} onSelectMode={handleSelectMode} />
                     </View>
                 </View>
 
