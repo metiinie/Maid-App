@@ -310,7 +310,7 @@ export default function HomeScreen() {
                                 key={vac.id}
                                 vacancy={vac}
                                 onPress={() => {
-                                    router.push('/(user)/dashboard');
+                                    router.push(`/vacancy/${vac.id}` as any);
                                 }}
                             />
                         ))}

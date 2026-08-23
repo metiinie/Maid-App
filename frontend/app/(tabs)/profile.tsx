@@ -125,6 +125,69 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
+                {/* Candidate Document Vault & Medical Clearance */}
+                <View className="bg-white border border-slate-200 rounded-3xl p-5 mb-4 shadow-xs">
+                    <View className="flex-row items-center justify-between mb-3">
+                        <View className="flex-row items-center gap-2">
+                            <ShieldCheck size={18} color="#059669" />
+                            <Text className="text-slate-900 text-base font-black">Candidate Document Vault</Text>
+                        </View>
+                        <View className="bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                            <Text className="text-emerald-800 text-[10px] font-extrabold">3/3 Verified</Text>
+                        </View>
+                    </View>
+                    <Text className="text-slate-500 text-xs font-medium mb-4">
+                        Required government and medical clearance documents for Gulf deployment.
+                    </Text>
+
+                    <View className="gap-2.5">
+                        <View className="flex-row items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-8 h-8 rounded-xl bg-emerald-100 items-center justify-center border border-emerald-200">
+                                    <CheckCircle2 size={16} color="#059669" />
+                                </View>
+                                <View>
+                                    <Text className="text-slate-900 text-xs font-extrabold">GAMCA Medical Report</Text>
+                                    <Text className="text-emerald-700 text-[10px] font-bold">Status: CLEARED (Fit for Duty)</Text>
+                                </View>
+                            </View>
+                            <Pressable className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl">
+                                <Text className="text-slate-700 text-[11px] font-extrabold">View PDF</Text>
+                            </Pressable>
+                        </View>
+
+                        <View className="flex-row items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-8 h-8 rounded-xl bg-blue-100 items-center justify-center border border-blue-200">
+                                    <FileText size={16} color="#2563EB" />
+                                </View>
+                                <View>
+                                    <Text className="text-slate-900 text-xs font-extrabold">MOLSA Skill Certificate</Text>
+                                    <Text className="text-blue-900 text-[10px] font-bold">Domestic Work & Cooking Level 2</Text>
+                                </View>
+                            </View>
+                            <Pressable className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl">
+                                <Text className="text-slate-700 text-[11px] font-extrabold">View Certificate</Text>
+                            </Pressable>
+                        </View>
+
+                        <View className="flex-row items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                            <View className="flex-row items-center gap-3">
+                                <View className="w-8 h-8 rounded-xl bg-amber-100 items-center justify-center border border-amber-200">
+                                    <ShieldCheck size={16} color="#D97706" />
+                                </View>
+                                <View>
+                                    <Text className="text-slate-900 text-xs font-extrabold">Ethiopian Passport Copy</Text>
+                                    <Text className="text-amber-800 text-[10px] font-bold">Valid until Nov 2030</Text>
+                                </View>
+                            </View>
+                            <Pressable className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl">
+                                <Text className="text-slate-700 text-[11px] font-extrabold">Update</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+
                 {/* Account Navigation & Settings List */}
                 <View className="bg-white border border-slate-200 rounded-3xl overflow-hidden mb-6 shadow-xs">
                     <Text className="text-slate-400 text-[10px] font-black uppercase tracking-wider px-5 pt-4 pb-2">

@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, MessageSquare } from 'lucide-react-native';
+import { useChat } from '../../context/ChatContext';
 
 export default function MessagesScreen() {
-    const router = useRouter();
+    const { openChatWithAgency } = useChat();
 
     const threads = [
         {
-            id: '1',
+            id: 'agency-1',
             agencyName: 'Ethio-Gulf Overseas Recruitment Agency',
             logoUrl: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200',
             lastMessage: 'Your GAMCA medical clearance report has been approved!',
@@ -16,10 +16,10 @@ export default function MessagesScreen() {
             unreadCount: 2,
         },
         {
-            id: '2',
+            id: 'agency-2',
             agencyName: 'Blue Nile Foreign Employment',
             logoUrl: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=200',
-            lastMessage: 'Hello, we received your inquiry regarding candidate Alem Tadesse.',
+            lastMessage: 'Hello, we received your inquiry regarding your domestic worker application.',
             time: 'Yesterday',
             unreadCount: 0,
         },
@@ -29,13 +29,14 @@ export default function MessagesScreen() {
         <View className="flex-1 bg-slate-50">
             <View className="px-5 pt-14 pb-4 bg-white border-b border-slate-200">
                 <Text className="text-xl font-extrabold text-slate-900">Agency Messages</Text>
+                <Text className="text-slate-500 text-xs mt-0.5 font-medium">Direct communication with licensed agencies</Text>
             </View>
 
             <ScrollView className="flex-1 p-5">
                 {threads.map((thread) => (
                     <TouchableOpacity
                         key={thread.id}
-                        onPress={() => router.push(`/messages/${thread.id}` as any)}
+                        onPress={() => openChatWithAgency(thread.id, thread.agencyName)}
                         className="bg-white p-4 rounded-2xl mb-3 border border-slate-200 flex-row items-center justify-between shadow-xs active:opacity-90"
                     >
                         <View className="flex-row items-center flex-1 mr-3">
@@ -66,3 +67,4 @@ export default function MessagesScreen() {
         </View>
     );
 }
+

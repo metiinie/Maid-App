@@ -16,7 +16,7 @@ export default function TabsLayout() {
             case 'PLATFORM_ADMIN':
                 return '#7C3AED'; // Purple Governance
             default:
-                return '#059669'; // Emerald Green
+                return '#059669'; // Emerald Green for Job Seekers
         }
     };
 
@@ -29,6 +29,7 @@ export default function TabsLayout() {
                     home: 'Agency Hub',
                     candidates: 'Roster',
                     vacancies: 'Orders',
+                    agencies: 'Partners',
                     saved: 'Pipeline',
                     messages: 'Messages',
                     alerts: 'Alerts',
@@ -39,6 +40,7 @@ export default function TabsLayout() {
                     home: 'Employer Hub',
                     candidates: 'Talent Search',
                     vacancies: 'My Requests',
+                    agencies: 'Agencies',
                     saved: 'Shortlist',
                     messages: 'Chat',
                     alerts: 'Alerts',
@@ -49,6 +51,7 @@ export default function TabsLayout() {
                     home: 'Control Center',
                     candidates: 'Candidates',
                     vacancies: 'Vacancies',
+                    agencies: 'Agencies',
                     saved: 'Agencies',
                     messages: 'Support',
                     alerts: 'Audits',
@@ -59,6 +62,7 @@ export default function TabsLayout() {
                     home: 'Home',
                     candidates: 'Talent Pool',
                     vacancies: 'Find Jobs',
+                    agencies: 'Agencies',
                     saved: 'Saved',
                     messages: 'Messages',
                     alerts: 'Alerts',
@@ -68,12 +72,13 @@ export default function TabsLayout() {
     };
 
     const titles = getTabTitles();
+    const isJobSeeker = type === 'PERSONAL';
 
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: '#F59E0B',
+                tabBarActiveTintColor: activeColor,
                 tabBarInactiveTintColor: '#94A3B8',
                 tabBarStyle: {
                     backgroundColor: '#0F172A',
@@ -107,17 +112,26 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="candidates"
-                options={{
-                    title: titles.candidates,
-                    tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
-                }}
-            />
-            <Tabs.Screen
                 name="vacancies"
                 options={{
                     title: titles.vacancies,
                     tabBarIcon: ({ color, size }) => <Briefcase size={size} color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="agencies"
+                options={{
+                    title: titles.agencies,
+                    href: isJobSeeker || type === 'GULF_EMPLOYER' ? undefined : null,
+                    tabBarIcon: ({ color, size }) => <Building2 size={size} color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="candidates"
+                options={{
+                    title: titles.candidates,
+                    href: isJobSeeker ? null : undefined, // Hide for Job Seekers, show for Employers/Agencies
+                    tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
                 }}
             />
             <Tabs.Screen
@@ -154,4 +168,5 @@ export default function TabsLayout() {
         </Tabs>
     );
 }
+
 

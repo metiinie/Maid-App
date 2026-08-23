@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, ActivityIndicator, Modal, Alert } from 'react-native';
-import { Search, Briefcase, MapPin, DollarSign, CheckCircle2, ShieldCheck, X, Building2 } from 'lucide-react-native';
+import { Search, Briefcase, MapPin, DollarSign, CheckCircle2, ShieldCheck, X, Building2, Heart, ChevronRight } from 'lucide-react-native';
 import { vacancyService } from '../../services/vacancyService';
+import { bookmarkService, SavedVacancy } from '../../services/bookmarkService';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'expo-router';
 
@@ -11,19 +12,57 @@ export default function VacanciesScreen() {
     const [vacancies, setVacancies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [activeCategory, setActiveCategory] = useState('ALL');
+    const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
     const [applyingVacancy, setApplyingVacancy] = useState<any>(null);
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
 
+    const categories = [
+        { id: 'ALL', label: 'All Jobs' },
+        { id: 'DOMESTIC', label: 'Domestic Worker' },
+        { id: 'NANNY', label: 'Nanny / Childcare' },
+        { id: 'CAREGIVER', label: 'Elderly Care' },
+        { id: 'COOK', label: 'Arabic Cook' },
+        { id: 'DRIVER', label: 'Driver' },
+    ];
+
     useEffect(() => {
         fetchVacancies();
-    }, []);
+        loadSavedBookmarks();
+    }, [activeCategory]);
+
+    async function loadSavedBookmarks() {
+        try {
+            const saved = await bookmarkService.getSavedVacancies();
+            setSavedIds(new Set(saved.map((s) => s.id)));
+        } catch { }
+    }
+
+    async function toggleBookmark(vac: any) {
+        const item: SavedVacancy = {
+            id: vac.id,
+            title: vac.title,
+            target_country: vac.target_country || vac.country || 'Saudi Arabia',
+            salary_monthly: vac.salary_monthly || '$400 USD',
+            agency_name: vac.agency_name,
+            contract_type: vac.contract_type,
+        };
+        const isSavedNow = await bookmarkService.toggleSaveVacancy(item);
+        setSavedIds((prev) => {
+            const next = new Set(prev);
+            if (isSavedNow) next.add(vac.id);
+            else next.delete(vac.id);
+            return next;
+        });
+    }
 
     async function fetchVacancies() {
         setLoading(true);
         try {
             const params: any = {};
             if (search) params.search = search;
+            if (activeCategory !== 'ALL') params.category = activeCategory;
             const res: any = await vacancyService.getPublicVacancies(params);
             const list = res.data || [];
 
@@ -114,8 +153,8 @@ export default function VacanciesScreen() {
                 </View>
             </View>
 
-            {/* Search */}
-            <View className="px-5 my-4">
+            {/* Search Bar */}
+            <View className="px-5 mt-4 mb-2">
                 <View className="flex-row items-center bg-white border border-slate-200 rounded-2xl px-4 py-1 shadow-xs">
                     <Search size={16} color="#64748B" />
                     <TextInput
@@ -130,7 +169,30 @@ export default function VacanciesScreen() {
                 </View>
             </View>
 
-            {/* Job Cards */}
+            {/* Category Filter Chips Bar */}
+            <View className="px-5 mb-3">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-2">
+                    {categories.map((cat) => {
+                        const active = activeCategory === cat.id;
+                        return (
+                            <Pressable
+                                key={cat.id}
+                                onPress={() => setActiveCategory(cat.id)}
+                                className={`px-3.5 py-2 rounded-xl border ${active
+                                    ? 'bg-emerald-600 border-emerald-700 shadow-xs'
+                                    : 'bg-white border-slate-200'
+                                    }`}
+                            >
+                                <Text className={`text-xs font-bold ${active ? 'text-white' : 'text-slate-700'}`}>
+                                    {cat.label}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </ScrollView>
+            </View>
+
+            {/* Job Cards List */}
             {loading ? (
                 <ActivityIndicator color="#059669" size="large" className="mt-10" />
             ) : (
@@ -139,51 +201,81 @@ export default function VacanciesScreen() {
                         <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-4 shadow-xs">
                             <Briefcase size={32} color="#94A3B8" />
                             <Text className="text-slate-900 text-sm font-bold mt-3">No vacancies found</Text>
-                            <Text className="text-slate-500 text-xs text-center mt-1">Try searching for a different title or country.</Text>
+                            <Text className="text-slate-500 text-xs text-center mt-1">Try searching for a different title or category.</Text>
                         </View>
                     ) : (
-                        vacancies.map((vac: any) => (
-                            <Pressable
-                                key={vac.id}
-                                onPress={() => { setApplyingVacancy(vac); setSuccess(false); }}
-                                className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs active:opacity-90"
-                            >
-                                <View className="flex-row items-center justify-between mb-2 pb-2 border-b border-slate-100">
-                                    <View className="flex-row items-center gap-1.5">
-                                        <Building2 size={14} color="#059669" />
-                                        <Text className="text-emerald-700 text-xs font-bold">{vac.agency_name}</Text>
-                                    </View>
-                                    <Text className="text-slate-500 text-[10px] font-bold">{vac.molsa_license}</Text>
-                                </View>
-
-                                <Text className="text-slate-900 text-base font-extrabold">{vac.title}</Text>
-
-                                <View className="flex-row flex-wrap gap-3 mt-3 pt-2 border-t border-slate-100">
-                                    <View className="flex-row items-center gap-1">
-                                        <Text className="text-sm">{vac.country_flag || '🇸🇦'}</Text>
-                                        <Text className="text-slate-800 text-xs font-bold">{vac.target_country}</Text>
-                                    </View>
-                                    <View className="flex-row items-center gap-1">
-                                        <DollarSign size={12} color="#1E3A8A" />
-                                        <Text className="text-blue-900 text-xs font-black">{vac.salary_monthly}</Text>
-                                    </View>
-                                    <View className="flex-row items-center gap-1">
-                                        <Briefcase size={12} color="#64748B" />
-                                        <Text className="text-slate-600 text-xs font-medium">{vac.contract_type}</Text>
-                                    </View>
-                                </View>
-
-                                {/* Benefits Badges */}
-                                <View className="flex-row flex-wrap gap-1.5 mt-3">
-                                    {vac.benefits?.map((b: string, i: number) => (
-                                        <View key={i} className="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg flex-row items-center gap-1">
-                                            <CheckCircle2 size={10} color="#059669" />
-                                            <Text className="text-emerald-800 text-[10px] font-bold">{b}</Text>
+                        vacancies.map((vac: any) => {
+                            const isSaved = savedIds.has(vac.id);
+                            return (
+                                <View
+                                    key={vac.id}
+                                    className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
+                                >
+                                    <View className="flex-row items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                                        <View className="flex-row items-center gap-1.5 flex-1 mr-2">
+                                            <Building2 size={14} color="#059669" />
+                                            <Text className="text-emerald-700 text-xs font-bold flex-1" numberOfLines={1}>{vac.agency_name}</Text>
                                         </View>
-                                    ))}
+                                        <View className="flex-row items-center gap-2">
+                                            <Text className="text-slate-400 text-[10px] font-bold">{vac.molsa_license}</Text>
+                                            <Pressable onPress={() => toggleBookmark(vac)} className="p-1">
+                                                <Heart
+                                                    size={18}
+                                                    color={isSaved ? '#EF4444' : '#94A3B8'}
+                                                    fill={isSaved ? '#EF4444' : 'none'}
+                                                />
+                                            </Pressable>
+                                        </View>
+                                    </View>
+
+                                    <Pressable onPress={() => router.push(`/vacancy/${vac.id}` as any)}>
+                                        <Text className="text-slate-900 text-base font-extrabold">{vac.title}</Text>
+
+                                        <View className="flex-row flex-wrap gap-3 mt-3 pt-2 border-t border-slate-100">
+                                            <View className="flex-row items-center gap-1">
+                                                <Text className="text-sm">{vac.country_flag || '🇸🇦'}</Text>
+                                                <Text className="text-slate-800 text-xs font-bold">{vac.target_country}</Text>
+                                            </View>
+                                            <View className="flex-row items-center gap-1">
+                                                <DollarSign size={12} color="#1E3A8A" />
+                                                <Text className="text-blue-900 text-xs font-black">{vac.salary_monthly}</Text>
+                                            </View>
+                                            <View className="flex-row items-center gap-1">
+                                                <Briefcase size={12} color="#64748B" />
+                                                <Text className="text-slate-600 text-xs font-medium">{vac.contract_type}</Text>
+                                            </View>
+                                        </View>
+
+                                        {/* Benefits Badges */}
+                                        <View className="flex-row flex-wrap gap-1.5 mt-3">
+                                            {vac.benefits?.map((b: string, i: number) => (
+                                                <View key={i} className="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg flex-row items-center gap-1">
+                                                    <CheckCircle2 size={10} color="#059669" />
+                                                    <Text className="text-emerald-800 text-[10px] font-bold">{b}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </Pressable>
+
+                                    {/* Action Buttons: View Specs & Quick Apply */}
+                                    <View className="flex-row gap-2 mt-4 pt-3 border-t border-slate-100">
+                                        <Pressable
+                                            onPress={() => router.push(`/vacancy/${vac.id}` as any)}
+                                            className="flex-1 bg-slate-100 border border-slate-200 py-2.5 rounded-xl items-center flex-row justify-center gap-1"
+                                        >
+                                            <Text className="text-slate-700 text-xs font-extrabold">Full Details</Text>
+                                            <ChevronRight size={14} color="#475569" />
+                                        </Pressable>
+                                        <Pressable
+                                            onPress={() => { setApplyingVacancy(vac); setSuccess(false); }}
+                                            className="flex-1 bg-emerald-600 py-2.5 rounded-xl items-center justify-center active:opacity-90 shadow-xs"
+                                        >
+                                            <Text className="text-white text-xs font-extrabold">Quick Apply</Text>
+                                        </Pressable>
+                                    </View>
                                 </View>
-                            </Pressable>
-                        ))
+                            );
+                        })
                     )}
                     <View className="h-20" />
                 </ScrollView>
@@ -256,3 +348,4 @@ export default function VacanciesScreen() {
         </View>
     );
 }
+
