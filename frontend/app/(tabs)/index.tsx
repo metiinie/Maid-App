@@ -443,8 +443,11 @@ export default function HomeScreen() {
                                 <CandidateCard
                                     key={cand.id}
                                     candidate={cand}
+                                    isSaved={bookmarkedCandidateIds.includes(cand.id)}
                                     onPress={() => handleSelectCandidate(cand)}
                                     onVideoPress={() => handleSelectCandidate(cand)}
+                                    onBookmarkPress={() => toggleCandidateBookmark(cand)}
+                                    onChatPress={() => handleChatAgency(cand)}
                                 />
                             ))
                         )}

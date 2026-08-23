@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator, Pressable } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { ChevronRight, Search, ShieldCheck, MessageSquarePlus, RefreshCw, CheckCheck } from 'lucide-react-native';
 import { chatService } from '../../services/chatService';
 import { useChat } from '../../context/ChatContext';
@@ -7,15 +8,18 @@ import { useChat } from '../../context/ChatContext';
 export default function MessagesScreen() {
     const [threads, setThreads] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [search, setSearch] = useState('');
     const { openChatWithAgency } = useChat();
 
-    useEffect(() => {
-        loadConversations();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadConversations(false);
+        }, [])
+    );
 
-    async function loadConversations() {
-        setLoading(true);
+    async function loadConversations(showLoader = true) {
+        if (showLoader) setLoading(true);
         try {
             const res: any = await chatService.getUserConversations();
             const list = res.data || [];
@@ -59,8 +63,14 @@ export default function MessagesScreen() {
             console.error('Failed to load user conversations:', err);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     }
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        loadConversations(false);
+    };
 
     const filteredThreads = threads.filter((t) => {
         const q = search.toLowerCase();
@@ -81,7 +91,7 @@ export default function MessagesScreen() {
                         </Text>
                     </View>
                     <Pressable
-                        onPress={loadConversations}
+                        onPress={() => loadConversations(true)}
                         className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center border border-slate-200 active:opacity-80"
                     >
                         <RefreshCw size={16} color="#059669" />
@@ -106,7 +116,11 @@ export default function MessagesScreen() {
             {loading ? (
                 <ActivityIndicator color="#059669" size="large" className="mt-10" />
             ) : (
-                <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    className="flex-1 px-5"
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#059669']} />}
+                    showsVerticalScrollIndicator={false}
+                >
                     {filteredThreads.length === 0 ? (
                         <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-4 shadow-xs">
                             <MessageSquarePlus size={32} color="#94A3B8" />
