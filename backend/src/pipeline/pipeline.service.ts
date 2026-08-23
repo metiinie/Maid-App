@@ -36,7 +36,7 @@ export class PipelineService {
                 employerCountry: data.employerCountry,
                 employerCity: data.employerCity,
                 employerContact: data.employerContact,
-                currentStage: data.currentStage || 'INTERVIEWING',
+                currentStage: data.currentStage || 'APPLIED',
                 expectedDeploymentDate: data.expectedDeploymentDate ? new Date(data.expectedDeploymentDate) : null,
                 notes: data.notes,
             },

@@ -1,6 +1,7 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { UserJwtGuard } from '../common/guards/user-jwt.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -30,4 +31,14 @@ export class AuthController {
     async loginAdmin(@Body() body: { email: string; password: string }) {
         return this.authService.loginAdmin(body.email, body.password);
     }
+
+    @Get('workspaces')
+    @UseGuards(UserJwtGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get available workspaces/organizations for authenticated user' })
+    async getWorkspaces(@Req() req: any) {
+        const userId = req.user.sub || req.user.id;
+        return this.authService.getUserWorkspaces(userId);
+    }
 }
+

@@ -53,7 +53,7 @@ export class AuthService {
     }
 
     async loginUser(phone: string, pin: string) {
-        const user = await this.prisma.user.findUnique({
+        const user: any = await (this.prisma as any).user.findUnique({
             where: { phone },
             include: {
                 organizationMemberships: {
@@ -83,7 +83,7 @@ export class AuthService {
                 lastName: user.lastName,
                 phone: user.phone,
                 preferredMode: user.preferredMode,
-                isPlatformAdmin: user.isPlatformAdmin,
+                isPlatformAdmin: user.isPlatformAdmin || false,
             },
             workspaces: workspaces.workspaces,
             activeWorkspace: workspaces.activeDefaultWorkspace,
@@ -91,7 +91,7 @@ export class AuthService {
     }
 
     async getUserWorkspaces(userId: string) {
-        const user = await this.prisma.user.findUnique({
+        const user: any = await (this.prisma as any).user.findUnique({
             where: { id: userId },
             include: {
                 organizationMemberships: {
@@ -121,15 +121,17 @@ export class AuthService {
                 },
             ];
 
-        for (const mem of user.organizationMemberships) {
-            if (mem.isActive && mem.organization.isActive) {
-                workspaces.push({
-                    id: mem.organization.id,
-                    type: mem.organization.type as any,
-                    name: mem.organization.name,
-                    role: mem.role,
-                    isVerified: mem.organization.isVerified,
-                });
+        if (user.organizationMemberships) {
+            for (const mem of user.organizationMemberships) {
+                if (mem.isActive && mem.organization?.isActive) {
+                    workspaces.push({
+                        id: mem.organization.id,
+                        type: mem.organization.type as any,
+                        name: mem.organization.name,
+                        role: mem.role,
+                        isVerified: mem.organization.isVerified,
+                    });
+                }
             }
         }
 
