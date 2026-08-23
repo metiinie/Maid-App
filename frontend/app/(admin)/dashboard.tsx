@@ -152,6 +152,33 @@ export default function AdminDashboard() {
         { key: 'billing', label: 'Billing' },
     ];
 
+    if (!admin) {
+        return (
+            <View className="flex-1 bg-slate-950 items-center justify-center p-6">
+                <View className="w-16 h-16 rounded-2xl bg-amber-500/20 border-2 border-amber-500 items-center justify-center mb-4">
+                    <Lock size={32} color="#F59E0B" />
+                </View>
+                <Text className="text-white text-xl font-black text-center mb-2">
+                    Agency Admin Access Restricted
+                </Text>
+                <Text className="text-slate-400 text-xs text-center font-semibold leading-5 mb-6 px-4">
+                    The Agency Admin Portal, 3-Step Candidate Wizard, and ATS Pipeline are restricted to licensed agency administrators.
+                </Text>
+                <Pressable
+                    onPress={() => router.push('/(auth)/login')}
+                    className="bg-amber-500 px-6 py-3.5 rounded-full items-center active:bg-amber-600 shadow-lg"
+                >
+                    <Text className="text-slate-950 text-xs font-black uppercase tracking-wider">
+                        Sign In as Agency Admin
+                    </Text>
+                </Pressable>
+                <Pressable onPress={() => router.replace('/(tabs)')} className="mt-4">
+                    <Text className="text-slate-400 text-xs font-bold">← Back to Public Dashboard</Text>
+                </Pressable>
+            </View>
+        );
+    }
+
     return (
         <View className="flex-1 bg-slate-50">
             {/* Deep Navy Admin Header (#0F172A) */}
