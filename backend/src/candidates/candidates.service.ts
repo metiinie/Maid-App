@@ -103,4 +103,41 @@ export class CandidatesService {
             orderBy: { createdAt: 'desc' },
         });
     }
+
+    async verifyDocument(candidateId: string, documentId: string, status: 'VERIFIED' | 'REJECTED', notes?: string) {
+        const document = await this.prisma.candidateDocument.findFirst({
+            where: { id: documentId, candidateId },
+        });
+
+        if (!document) {
+            throw new NotFoundException('Document not found for this candidate');
+        }
+
+        const updatedDoc = await this.prisma.candidateDocument.update({
+            where: { id: documentId },
+            data: {
+                verificationStatus: status,
+                verifiedAt: status === 'VERIFIED' ? new Date() : null,
+            },
+        });
+
+        if (document.type === 'MEDICAL' || document.type === 'MEDICAL_CLEARANCE') {
+            await this.prisma.candidate.update({
+                where: { id: candidateId },
+                data: {
+                    medicalStatus: status === 'VERIFIED' ? 'cleared' : 'failed',
+                    medicalClearanceDate: status === 'VERIFIED' ? new Date() : null,
+                },
+            });
+        } else if (document.type === 'VISA') {
+            await this.prisma.candidate.update({
+                where: { id: candidateId },
+                data: {
+                    visaStatus: status === 'VERIFIED' ? 'issued' : 'rejected',
+                },
+            });
+        }
+
+        return updatedDoc;
+    }
 }
