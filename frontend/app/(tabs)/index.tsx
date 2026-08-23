@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { candidateService } from '../../services/candidateService';
 import { vacancyService } from '../../services/vacancyService';
+import { bookmarkService } from '../../services/bookmarkService';
 import { CandidateCard, CandidateProps } from '../../components/CandidateCard';
 import { VacancyCard, VacancyProps } from '../../components/VacancyCard';
 import { InquiryModal } from '../../components/InquiryModal';
@@ -151,11 +152,47 @@ export default function HomeScreen() {
 
     const isAuthenticated = !!user || !!admin;
 
+    const [bookmarkedCandidateIds, setBookmarkedCandidateIds] = useState<string[]>([]);
+
     useFocusEffect(
         useCallback(() => {
             loadFeedData(false);
+            loadBookmarks();
         }, [mode])
     );
+
+    async function loadBookmarks() {
+        try {
+            const list = await bookmarkService.getSavedCandidates();
+            setBookmarkedCandidateIds(list.map((b: any) => b.id));
+        } catch { }
+    }
+
+    const toggleCandidateBookmark = async (cand: CandidateProps) => {
+        const isSaved = bookmarkedCandidateIds.includes(cand.id);
+        await bookmarkService.toggleSaveCandidate({
+            id: cand.id,
+            firstName: cand.first_name,
+            lastName: cand.last_name,
+            category: cand.role,
+            yearsOfExperience: cand.experience_years,
+            medicalStatus: cand.medical_status === 'Cleared' ? 'Cleared' : 'Pending',
+        });
+        if (isSaved) {
+            setBookmarkedCandidateIds((prev) => prev.filter((id) => id !== cand.id));
+        } else {
+            setBookmarkedCandidateIds((prev) => [...prev, cand.id]);
+        }
+    };
+
+    const handleChatAgency = (cand: CandidateProps) => {
+        openChatWithAgency(
+            cand.agency_id || 'ag-1',
+            cand.agency_name || 'Verified Ethiopian Manpower Agency',
+            'candidate_inquiry',
+            cand.id
+        );
+    };
 
     async function loadFeedData(showLoader = true) {
         if (showLoader) setLoading(true);
@@ -180,6 +217,7 @@ export default function HomeScreen() {
     const onRefresh = () => {
         setRefreshing(true);
         loadFeedData(false);
+        loadBookmarks();
     };
 
     const handleSelectCandidate = (cand: CandidateProps) => {

@@ -250,13 +250,23 @@ export default function AgenciesScreen() {
                                     </View>
                                 </View>
 
-                                <Pressable
-                                    onPress={() => openChatWithAgency(agency.id, agency.name)}
-                                    className="mt-4 bg-emerald-600 py-3 rounded-xl items-center flex-row justify-center gap-2 active:opacity-90 shadow-xs"
-                                >
-                                    <MessageSquare size={14} color="#FFFFFF" />
-                                    <Text className="text-white text-xs font-extrabold">Contact Agency via Chat</Text>
-                                </Pressable>
+                                <View className="flex-row items-center gap-2 mt-4">
+                                    <Pressable
+                                        onPress={() => openChatWithAgency(agency.id, agency.name, 'demand_order', null)}
+                                        className="flex-1 bg-slate-900 py-3 rounded-xl items-center flex-row justify-center gap-1.5 active:opacity-90 shadow-xs"
+                                    >
+                                        <Building2 size={14} color="#F59E0B" />
+                                        <Text className="text-amber-400 text-xs font-extrabold">Demand Order</Text>
+                                    </Pressable>
+
+                                    <Pressable
+                                        onPress={() => openChatWithAgency(agency.id, agency.name, 'general_inquiry', null)}
+                                        className="flex-1 bg-emerald-600 py-3 rounded-xl items-center flex-row justify-center gap-1.5 active:opacity-90 shadow-xs"
+                                    >
+                                        <MessageSquare size={14} color="#FFFFFF" />
+                                        <Text className="text-white text-xs font-extrabold">Chat Agency</Text>
+                                    </Pressable>
+                                </View>
                             </View>
                         ))
                     )}

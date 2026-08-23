@@ -57,8 +57,8 @@ export default function CandidatesScreen() {
 
     async function loadBookmarks() {
         try {
-            const list = await bookmarkService.getBookmarks();
-            setBookmarkedIds(list.map((b) => b.id));
+            const list = await bookmarkService.getSavedCandidates();
+            setBookmarkedIds(list.map((b: any) => b.id));
         } catch {
             // Keep current bookmarks state
         }
@@ -157,27 +157,28 @@ export default function CandidatesScreen() {
 
     const toggleBookmark = async (candidate: any) => {
         const isSaved = bookmarkedIds.includes(candidate.id);
+        await bookmarkService.toggleSaveCandidate({
+            id: candidate.id,
+            firstName: candidate.first_name || 'Candidate',
+            lastName: candidate.last_name || '',
+            category: candidate.category_name || 'Housemaid & Cook',
+            yearsOfExperience: candidate.years_experience || 3,
+            medicalStatus: 'Cleared',
+        });
         if (isSaved) {
-            await bookmarkService.removeBookmark(candidate.id);
             setBookmarkedIds((prev) => prev.filter((id) => id !== candidate.id));
         } else {
-            await bookmarkService.addBookmark({
-                id: candidate.id,
-                title: `${candidate.first_name} ${candidate.last_name} (${candidate.code})`,
-                subtitle: candidate.category_name || 'Housemaid & Cook',
-                type: 'CANDIDATE',
-                savedAt: new Date().toISOString(),
-            });
             setBookmarkedIds((prev) => [...prev, candidate.id]);
         }
     };
 
     const handleInquireAgency = (candidate: any) => {
-        openChatWithAgency({
-            id: candidate.agency_id || 'ag-1',
-            name: candidate.agency_name || 'Verified Ethiopian Manpower Agency',
-            initialMessage: `Hello, I am interested in hiring candidate ref code: ${candidate.code || candidate.id} (${candidate.first_name} ${candidate.last_name} - ${candidate.category_name}). Is this worker available for deployment?`,
-        });
+        openChatWithAgency(
+            candidate.agency_id || 'ag-1',
+            candidate.agency_name || 'Verified Ethiopian Manpower Agency',
+            'candidate_inquiry',
+            candidate.id
+        );
     };
 
     // Client-side search & chip filter fallback
