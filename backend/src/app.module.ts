@@ -13,6 +13,7 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { StaffModule } from './staff/staff.module';
 import { SettingsModule } from './settings/settings.module';
+import { AgenciesModule } from './agencies/agencies.module';
 import { MediaService } from './media/media.service';
 import { SmsEthiopiaService } from './sms/sms.service';
 import { PushNotificationService } from './notifications/push.service';
@@ -35,6 +36,7 @@ import { PushNotificationService } from './notifications/push.service';
         NotificationsModule,
         StaffModule,
         SettingsModule,
+        AgenciesModule,
     ],
     providers: [
         MediaService,
