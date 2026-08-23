@@ -28,6 +28,9 @@ import {
     Lock,
     Eye,
     Check,
+    MapPin,
+    Award,
+    FileCheck,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { RoleToggle } from '../../components/RoleToggle';
@@ -37,23 +40,26 @@ export default function ProfileScreen() {
     const { user, admin, logoutUser, logoutAdmin, activeWorkspace, switchWorkspace, workspaces } = useAuth();
     const router = useRouter();
 
+    const isEmployer = activeWorkspace?.type === 'GULF_EMPLOYER';
+
     const [refreshing, setRefreshing] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<any>(null);
     const [editProfileVisible, setEditProfileVisible] = useState(false);
 
     // Profile editable state
-    const [firstName, setFirstName] = useState(user?.first_name || 'Almaz');
-    const [lastName, setLastName] = useState(user?.last_name || 'Tadesse');
-    const [phone, setPhone] = useState(user?.phone || '+251 911 234 567');
-    const [city, setCity] = useState('Addis Ababa (Bole)');
-    const [targetCountry, setTargetCountry] = useState('Saudi Arabia');
+    const [companyName, setCompanyName] = useState('Al-Rashid Recruitment & Household Services');
+    const [crNumber, setCrNumber] = useState('CR-SA-849201');
+    const [firstName, setFirstName] = useState(user?.first_name || 'Tariq');
+    const [lastName, setLastName] = useState(user?.last_name || 'Al-Rashid');
+    const [phone, setPhone] = useState(user?.phone || '+966 50 123 4567');
+    const [city, setCity] = useState('Riyadh, Saudi Arabia');
 
     // App Preferences State
     const [language, setLanguage] = useState<'EN' | 'AM'>('EN');
     const [biometricsEnabled, setBiometricsEnabled] = useState(true);
     const [pushNotifsEnabled, setPushNotifsEnabled] = useState(true);
 
-    const currentMode = activeWorkspace?.type === 'GULF_EMPLOYER' ? 'employer' : 'seeker';
+    const currentMode = isEmployer ? 'employer' : 'seeker';
 
     useFocusEffect(
         useCallback(() => {
@@ -76,12 +82,48 @@ export default function ProfileScreen() {
 
     const handleSaveProfile = () => {
         setEditProfileVisible(false);
-        Alert.alert('Profile Updated', 'Your personal details have been saved successfully.');
+        Alert.alert('Profile Updated', 'Your profile and company details have been saved successfully.');
     };
 
     const isAdmin = !!admin;
 
-    const documentsList = [
+    const employerDocuments = [
+        {
+            id: 'doc-emp-1',
+            title: 'Gulf Commercial Registration (CR)',
+            type: 'COMMERCIAL_REGISTRATION',
+            status: 'VERIFIED & ACTIVE',
+            statusColor: 'emerald',
+            issueDate: 'Jan 10, 2024',
+            expiryDate: 'Jan 10, 2029',
+            issuedBy: 'Ministry of Commerce & Investment (Saudi Arabia)',
+            docRef: 'CR-SA-849201',
+        },
+        {
+            id: 'doc-emp-2',
+            title: 'MOI Foreign Recruitment Accreditation',
+            type: 'RECRUITMENT_LICENSE',
+            status: 'Authorized Sponsor',
+            statusColor: 'blue',
+            issueDate: 'Mar 01, 2024',
+            expiryDate: 'Mar 01, 2027',
+            issuedBy: 'Ministry of Interior (MOI / Musaned)',
+            docRef: 'MOI-ACC-2024-991',
+        },
+        {
+            id: 'doc-emp-3',
+            title: 'Recruitment Escrow Guarantee Clearance',
+            type: 'ESCROW_DEPOSIT',
+            status: 'Escrow Deposited',
+            statusColor: 'amber',
+            issueDate: 'May 15, 2024',
+            expiryDate: 'May 15, 2026',
+            issuedBy: 'Al Rajhi Bank Escrow Trust',
+            docRef: 'ESC-AR-2024-004',
+        },
+    ];
+
+    const seekerDocuments = [
         {
             id: 'doc-1',
             title: 'GAMCA Medical Clearance Report',
@@ -117,21 +159,26 @@ export default function ProfileScreen() {
         },
     ];
 
+    const documentsList = isEmployer ? employerDocuments : seekerDocuments;
+
     return (
         <View className="flex-1 bg-slate-50">
             {/* Top Bar Header */}
             <View className="bg-slate-900 px-5 pt-14 pb-6 shadow-md">
                 <View className="flex-row items-center justify-between">
-                    <View>
-                        <Text className="text-white text-xl font-black tracking-wide">Account Profile</Text>
+                    <View className="flex-1 mr-2">
+                        <Text className="text-white text-xl font-black tracking-wide">
+                            {isEmployer ? 'Employer Company Profile' : 'Account Profile'}
+                        </Text>
                         <Text className="text-slate-400 text-xs font-medium mt-0.5">
-                            Manage workspace, persona & system preferences
+                            Manage workspace, accreditation & system preferences
                         </Text>
                     </View>
 
-                    {isAdmin ? (
-                        <View className="bg-amber-500/20 border border-amber-500/30 px-3 py-1 rounded-full">
-                            <Text className="text-amber-400 text-[10px] font-black uppercase">AGENCY ADMIN</Text>
+                    {isEmployer ? (
+                        <View className="bg-amber-500/20 border border-amber-500/30 px-3 py-1 rounded-full flex-row items-center gap-1">
+                            <Award size={12} color="#F59E0B" />
+                            <Text className="text-amber-400 text-[10px] font-black uppercase">GULF EMPLOYER</Text>
                         </View>
                     ) : (
                         <View className="bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 rounded-full flex-row items-center gap-1">
@@ -141,19 +188,19 @@ export default function ProfileScreen() {
                     )}
                 </View>
 
-                {/* User Identity Card */}
+                {/* User / Company Card */}
                 <View className="flex-row items-center gap-4 mt-5 bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4">
                     <View className="w-14 h-14 rounded-2xl bg-amber-500 items-center justify-center shadow-xs">
                         <Text className="text-slate-950 text-xl font-black">
-                            {firstName ? firstName[0] : (admin?.email ? admin.email[0].toUpperCase() : 'U')}
+                            {isEmployer ? 'A' : (firstName ? firstName[0] : 'U')}
                         </Text>
                     </View>
                     <View className="flex-1">
-                        <Text className="text-white text-base font-black">
-                            {firstName ? `${firstName} ${lastName}` : (admin?.email || 'Authenticated User')}
+                        <Text className="text-white text-base font-black" numberOfLines={1}>
+                            {isEmployer ? companyName : `${firstName} ${lastName}`}
                         </Text>
                         <Text className="text-amber-400 text-xs font-bold mt-0.5">
-                            {activeWorkspace?.name || 'Personal Account'}
+                            {isEmployer ? `CR Reg: ${crNumber}` : (activeWorkspace?.name || 'Personal Account')}
                         </Text>
                         <Text className="text-slate-400 text-[11px] font-medium mt-0.5">
                             {phone} • {city}
@@ -207,7 +254,7 @@ export default function ProfileScreen() {
                         <View className="flex-1 mr-2">
                             <Text className="text-slate-900 text-sm font-extrabold">{activeWorkspace?.name}</Text>
                             <Text className="text-slate-500 text-xs font-semibold mt-0.5">
-                                Role Context: <Text className="text-emerald-700 font-bold">{activeWorkspace?.role || 'JOB_SEEKER'}</Text>
+                                Role Context: <Text className="text-emerald-700 font-bold">{activeWorkspace?.role || 'GULF_EMPLOYER'}</Text>
                             </Text>
                         </View>
                         {activeWorkspace?.isVerified && (
@@ -219,19 +266,23 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                {/* Candidate Document Vault & Medical Clearance */}
+                {/* Document Vault & Accreditation */}
                 <View className="bg-white border border-slate-200 rounded-3xl p-5 mb-4 shadow-xs">
                     <View className="flex-row items-center justify-between mb-3">
                         <View className="flex-row items-center gap-2">
-                            <ShieldCheck size={18} color="#059669" />
-                            <Text className="text-slate-900 text-base font-black">Candidate Document Vault</Text>
+                            <FileCheck size={18} color="#059669" />
+                            <Text className="text-slate-900 text-base font-black">
+                                {isEmployer ? 'Employer Accreditation Vault' : 'Candidate Document Vault'}
+                            </Text>
                         </View>
                         <View className="bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                             <Text className="text-emerald-800 text-[10px] font-extrabold">3/3 Verified</Text>
                         </View>
                     </View>
                     <Text className="text-slate-500 text-xs font-medium mb-4">
-                        Required government and medical clearance documents for Gulf deployment.
+                        {isEmployer
+                            ? 'Verified Commercial Registration and Ministry of Interior recruitment credentials.'
+                            : 'Required government and medical clearance documents for Gulf deployment.'}
                     </Text>
 
                     <View className="gap-2.5">
@@ -306,7 +357,7 @@ export default function ProfileScreen() {
                                 <Lock size={18} color="#D97706" />
                                 <View>
                                     <Text className="text-slate-900 text-xs font-bold">Biometric Auth</Text>
-                                    <Text className="text-slate-500 text-[10px] font-medium">Require Face ID / Fingerprint</Text>
+                                    <Text className="text-slate-500 text-[10px] font-medium font-medium">Require Face ID / Fingerprint</Text>
                                 </View>
                             </View>
                             <Switch
@@ -323,7 +374,7 @@ export default function ProfileScreen() {
                                 <Bell size={18} color="#2563EB" />
                                 <View>
                                     <Text className="text-slate-900 text-xs font-bold">Push Notifications</Text>
-                                    <Text className="text-slate-500 text-[10px] font-medium">Job & medical status alerts</Text>
+                                    <Text className="text-slate-500 text-[10px] font-medium">Demand order & candidate status alerts</Text>
                                 </View>
                             </View>
                             <Switch
@@ -359,38 +410,20 @@ export default function ProfileScreen() {
                     </Pressable>
 
                     <Pressable
-                        onPress={() => router.push('/(user)/dashboard')}
+                        onPress={() => router.push('/(tabs)/vacancies')}
                         className="px-5 py-4 flex-row items-center justify-between border-b border-slate-100 active:bg-slate-50"
                     >
                         <View className="flex-row items-center gap-3">
                             <View className="w-9 h-9 rounded-xl bg-blue-50 items-center justify-center border border-blue-200/60">
-                                <FileText size={18} color="#2563EB" />
+                                <Briefcase size={18} color="#2563EB" />
                             </View>
                             <View>
-                                <Text className="text-slate-900 text-xs font-bold">My Applications & Saved</Text>
-                                <Text className="text-slate-500 text-[11px] font-medium">Track submitted job applications</Text>
+                                <Text className="text-slate-900 text-xs font-bold">Demand Orders Hub</Text>
+                                <Text className="text-slate-500 text-[11px] font-medium">Manage bulk recruitment requests</Text>
                             </View>
                         </View>
                         <ChevronRight size={16} color="#94A3B8" />
                     </Pressable>
-
-                    {isAdmin && (
-                        <Pressable
-                            onPress={() => router.push('/(admin)/dashboard')}
-                            className="px-5 py-4 flex-row items-center justify-between border-b border-slate-100 active:bg-slate-50"
-                        >
-                            <View className="flex-row items-center gap-3">
-                                <View className="w-9 h-9 rounded-xl bg-emerald-50 items-center justify-center border border-emerald-200/60">
-                                    <Briefcase size={18} color="#059669" />
-                                </View>
-                                <View>
-                                    <Text className="text-slate-900 text-xs font-bold">Agency Admin Control Center</Text>
-                                    <Text className="text-slate-500 text-[11px] font-medium">Manage candidates, vacancies & pipelines</Text>
-                                </View>
-                            </View>
-                            <ChevronRight size={16} color="#94A3B8" />
-                        </Pressable>
-                    )}
 
                     <Pressable
                         onPress={async () => {
@@ -477,6 +510,26 @@ export default function ProfileScreen() {
                         </View>
 
                         <View className="gap-3 my-2">
+                            {isEmployer && (
+                                <View>
+                                    <Text className="text-slate-700 text-xs font-bold mb-1">Company / Household Name</Text>
+                                    <TextInput
+                                        value={companyName}
+                                        onChangeText={setCompanyName}
+                                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 font-bold"
+                                    />
+                                </View>
+                            )}
+                            {isEmployer && (
+                                <View>
+                                    <Text className="text-slate-700 text-xs font-bold mb-1">Commercial Reg (CR) Number</Text>
+                                    <TextInput
+                                        value={crNumber}
+                                        onChangeText={setCrNumber}
+                                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 font-bold"
+                                    />
+                                </View>
+                            )}
                             <View>
                                 <Text className="text-slate-700 text-xs font-bold mb-1">First Name</Text>
                                 <TextInput
@@ -531,4 +584,3 @@ export default function ProfileScreen() {
         </View>
     );
 }
-
