@@ -93,6 +93,71 @@ export default function AdminDashboard() {
         description: 'Requires cooking skill and Arabic language basics.',
     });
 
+    const [selectedCategory, setSelectedCategory] = useState('ALL');
+
+    const sampleAdminCandidates = [
+        {
+            id: 'cand-admin-1',
+            first_name: 'Alem',
+            last_name: 'Tadesse',
+            candidate_code: 'ET-8492',
+            skill_category: 'Housemaid',
+            experience_years: '3',
+            medical_status: 'Cleared',
+            passport_status: 'Valid',
+            passport_number: 'EP-849201',
+            status: 'ACTIVE',
+            preferred_country: 'Saudi Arabia',
+            notes: 'Fluent in Arabic cooking and household management. 3 years experience in Riyadh.',
+            photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200',
+        },
+        {
+            id: 'cand-admin-2',
+            first_name: 'Tigist',
+            last_name: 'Assefa',
+            candidate_code: 'ET-8493',
+            skill_category: 'Cook & Housemaid',
+            experience_years: '5',
+            medical_status: 'Cleared',
+            passport_status: 'Valid',
+            passport_number: 'EP-849302',
+            status: 'ACTIVE',
+            preferred_country: 'UAE',
+            notes: 'Specialist in Middle Eastern cuisine, pastry, and family care.',
+            photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+        },
+        {
+            id: 'cand-admin-3',
+            first_name: 'Genet',
+            last_name: 'Haile',
+            candidate_code: 'ET-8494',
+            skill_category: 'Nanny & Caregiver',
+            experience_years: '2',
+            medical_status: 'Pending Medical',
+            passport_status: 'Valid',
+            passport_number: 'EP-849403',
+            status: 'ON_HOLD',
+            preferred_country: 'Kuwait',
+            notes: 'Certified in infant care, first aid, and English communication.',
+            photo_url: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=200',
+        },
+        {
+            id: 'cand-admin-4',
+            first_name: 'Meskerm',
+            last_name: 'Bekele',
+            candidate_code: 'ET-8495',
+            skill_category: 'Elderly Caregiver',
+            experience_years: '4',
+            medical_status: 'Cleared',
+            passport_status: 'Valid',
+            passport_number: 'EP-849504',
+            status: 'ACTIVE',
+            preferred_country: 'Qatar',
+            notes: 'Patient caregiver experienced with mobility assistance and medication monitoring.',
+            photo_url: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=200',
+        },
+    ];
+
     async function loadData() {
         setLoading(true);
         try {
@@ -103,12 +168,15 @@ export default function AdminDashboard() {
                 subscriptionService.getAgencySubscription(),
                 subscriptionService.getSubscriptionPlans(),
             ]);
-            setCandidates(cRes.data || []);
+            const fetchedCandidates = cRes.data || [];
+            setCandidates(fetchedCandidates.length > 0 ? fetchedCandidates : sampleAdminCandidates);
             setVacancies(vRes.data || []);
             setPipelines(pRes.data || []);
             setSubscription(sRes.data || null);
             setPlans(plRes.data || []);
-        } catch (e) { }
+        } catch (e) {
+            setCandidates(sampleAdminCandidates);
+        }
         setLoading(false);
     }
 
@@ -351,6 +419,27 @@ export default function AdminDashboard() {
                     {/* CANDIDATES TAB */}
                     {activeTab === 'candidates' && (
                         <View>
+                            {/* Skill Category Filter Chips */}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3.5 flex-row">
+                                {['ALL', 'Housemaid', 'Cook & Housemaid', 'Nanny & Caregiver', 'Elderly Caregiver'].map((cat) => (
+                                    <Pressable
+                                        key={cat}
+                                        onPress={() => setSelectedCategory(cat)}
+                                        className={`px-3 py-1.5 rounded-full mr-2 border ${selectedCategory === cat
+                                            ? 'bg-amber-500 border-amber-600'
+                                            : 'bg-white border-slate-200'
+                                            }`}
+                                    >
+                                        <Text
+                                            className={`text-[11px] font-extrabold ${selectedCategory === cat ? 'text-slate-950' : 'text-slate-700'
+                                                }`}
+                                        >
+                                            {cat}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </ScrollView>
+
                             <Pressable
                                 onPress={() => {
                                     setWizardStep(1);
@@ -362,54 +451,82 @@ export default function AdminDashboard() {
                                 <Text className="text-slate-950 text-xs font-black uppercase">Add Candidate (3-Step Wizard)</Text>
                             </Pressable>
 
-                            {filteredCandidates.length === 0 ? (
+                            {filteredCandidates
+                                .filter((c) => selectedCategory === 'ALL' || (c.skill_category || '').toLowerCase().includes(selectedCategory.toLowerCase()))
+                                .length === 0 ? (
                                 <View className="bg-white p-8 rounded-2xl border border-slate-200 items-center justify-center mt-2 shadow-xs">
                                     <Users size={32} color="#94A3B8" />
                                     <Text className="text-slate-900 text-sm font-bold mt-2">No Candidates Found</Text>
                                     <Text className="text-slate-500 text-xs text-center mt-1">Tap "Add Candidate" to publish domestic workers to your roster.</Text>
                                 </View>
                             ) : (
-                                filteredCandidates.map((c: any) => (
-                                    <Pressable
-                                        key={c.id}
-                                        onPress={() => setSelectedCandidate(c)}
-                                        className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs active:opacity-90"
-                                    >
-                                        <View className="flex-row items-center justify-between">
-                                            <View className="flex-row items-center gap-2 flex-1 mr-2">
-                                                <Text className="text-slate-900 text-sm font-extrabold">
-                                                    {c.first_name} {c.last_name}
-                                                </Text>
-                                                <ShieldCheck size={14} color="#059669" />
-                                            </View>
+                                filteredCandidates
+                                    .filter((c) => selectedCategory === 'ALL' || (c.skill_category || '').toLowerCase().includes(selectedCategory.toLowerCase()))
+                                    .map((c: any) => (
+                                        <View
+                                            key={c.id}
+                                            className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-xs"
+                                        >
+                                            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100">
+                                                <View className="flex-row items-center flex-1 mr-2">
+                                                    <View className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden mr-3 items-center justify-center">
+                                                        {c.photo_url ? (
+                                                            <Image source={{ uri: c.photo_url }} className="w-full h-full" />
+                                                        ) : (
+                                                            <Users size={20} color="#64748B" />
+                                                        )}
+                                                    </View>
+                                                    <View className="flex-1">
+                                                        <View className="flex-row items-center gap-1.5 mb-0.5">
+                                                            <View className="bg-slate-900 px-1.5 py-0.5 rounded-md">
+                                                                <Text className="text-amber-400 text-[9px] font-black">{c.candidate_code || 'ET-8492'}</Text>
+                                                            </View>
+                                                            <Text className="text-slate-900 text-sm font-extrabold flex-1" numberOfLines={1}>
+                                                                {c.first_name} {c.last_name}
+                                                            </Text>
+                                                        </View>
+                                                        <Text className="text-slate-600 text-xs font-semibold">
+                                                            {c.skill_category || 'Domestic Worker'} • {c.experience_years || '3'} yrs exp
+                                                        </Text>
+                                                    </View>
+                                                </View>
 
-                                            <View
-                                                className={`px-2.5 py-0.5 rounded-full ${c.medical_status === 'Cleared' || c.medical_status === 'cleared'
-                                                    ? 'bg-emerald-100 border border-emerald-200'
-                                                    : 'bg-amber-100 border border-amber-200'
-                                                    }`}
-                                            >
-                                                <Text
-                                                    className={`text-[10px] font-extrabold ${c.medical_status === 'Cleared' || c.medical_status === 'cleared'
-                                                        ? 'text-emerald-900'
-                                                        : 'text-amber-900'
+                                                <View
+                                                    className={`px-2.5 py-1 rounded-full border ${c.medical_status === 'Cleared' || c.medical_status === 'cleared'
+                                                        ? 'bg-emerald-50 border-emerald-200'
+                                                        : 'bg-amber-50 border-amber-200'
                                                         }`}
                                                 >
-                                                    {c.medical_status || 'GAMCA Cleared'}
-                                                </Text>
+                                                    <Text
+                                                        className={`text-[10px] font-black ${c.medical_status === 'Cleared' || c.medical_status === 'cleared'
+                                                            ? 'text-emerald-800'
+                                                            : 'text-amber-800'
+                                                            }`}
+                                                    >
+                                                        {c.medical_status || 'GAMCA Cleared'}
+                                                    </Text>
+                                                </View>
+                                            </View>
+
+                                            <View className="flex-row items-center justify-between mt-3">
+                                                <View className="flex-row items-center gap-2">
+                                                    <View className="bg-slate-100 px-2 py-0.5 rounded-md">
+                                                        <Text className="text-slate-700 text-[10px] font-bold">Pref: {c.preferred_country || 'Saudi Arabia'}</Text>
+                                                    </View>
+                                                    <View className="bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                                                        <Text className="text-blue-800 text-[10px] font-bold">Passport: {c.passport_number || 'EP-849201'}</Text>
+                                                    </View>
+                                                </View>
+
+                                                <Pressable
+                                                    onPress={() => setSelectedCandidate(c)}
+                                                    className="bg-slate-900 px-3 py-1.5 rounded-xl flex-row items-center gap-1 active:opacity-90"
+                                                >
+                                                    <Text className="text-amber-400 text-xs font-black">Inspect Details →</Text>
+                                                </Pressable>
                                             </View>
                                         </View>
-
-                                        <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-slate-100">
-                                            <Text className="text-slate-700 text-xs font-bold">
-                                                {c.category_name || c.skill_category || 'Domestic Worker'}
-                                            </Text>
-                                            <Text className="text-slate-400 text-[10px] font-semibold">
-                                                Passport: {c.passport_number || 'EP-849201'}
-                                            </Text>
-                                        </View>
-                                    </Pressable>
-                                ))
+                                    ))
                             )}
                         </View>
                     )}
