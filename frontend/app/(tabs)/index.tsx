@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ShieldCheck, Users, Briefcase, MapPin, ArrowRight, CheckCircle2, User, Building2, LogIn } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { candidateService } from '../../services/candidateService';
+import { WorkspaceSwitcher } from '../../components/WorkspaceSwitcher';
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -39,44 +40,20 @@ export default function HomeScreen() {
             {/* Hero Section */}
             <View className="px-5 pt-14 pb-6 bg-white border-b border-slate-200 shadow-xs">
                 <View className="flex-row items-center justify-between mb-4">
-                    <View className="flex-row items-center">
+                    <View className="flex-row items-center flex-1 mr-2">
                         <View className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 items-center justify-center mr-3">
                             <ShieldCheck size={22} color="#1E3A8A" strokeWidth={2.5} />
                         </View>
-                        <View>
+                        <View className="flex-1">
                             <Text className="text-blue-900 text-xs font-extrabold tracking-widest uppercase">
-                                EthioRecruit Platform
+                                EthioRecruit SaaS
                             </Text>
-                            <Text className="text-slate-500 text-[10px] font-medium">Public User Directory</Text>
+                            <Text className="text-slate-500 text-[10px] font-medium">Unified Recruitment Platform</Text>
                         </View>
                     </View>
 
-                    {/* Role Status Badge / Auth Action */}
-                    {admin ? (
-                        <Pressable
-                            onPress={() => router.push('/(admin)/dashboard')}
-                            className="bg-blue-900 px-3 py-1.5 rounded-full flex-row items-center gap-1 shadow-xs"
-                        >
-                            <Building2 size={12} color="#FFFFFF" />
-                            <Text className="text-white text-[11px] font-extrabold">Admin Dashboard</Text>
-                        </Pressable>
-                    ) : user ? (
-                        <Pressable
-                            onPress={() => router.push('/(user)/dashboard')}
-                            className="bg-emerald-600 px-3 py-1.5 rounded-full flex-row items-center gap-1 shadow-xs"
-                        >
-                            <User size={12} color="#FFFFFF" />
-                            <Text className="text-white text-[11px] font-extrabold">My Dashboard</Text>
-                        </Pressable>
-                    ) : (
-                        <Pressable
-                            onPress={() => router.push('/(auth)/login')}
-                            className="bg-blue-900 px-3.5 py-1.5 rounded-full flex-row items-center gap-1 shadow-xs"
-                        >
-                            <LogIn size={12} color="#FFFFFF" />
-                            <Text className="text-white text-[11px] font-extrabold">Sign In</Text>
-                        </Pressable>
-                    )}
+                    {/* Dynamic Workspace Switcher Dropdown */}
+                    <WorkspaceSwitcher />
                 </View>
 
                 <Text className="text-slate-900 text-2xl font-extrabold leading-tight">
