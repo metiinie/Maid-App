@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../context/AuthContext';
 import { ChatProvider } from '../context/ChatContext';
+import { ChatModal } from '../components/ChatModal';
 import '../global.css';
 
 export default function RootLayout() {
@@ -24,7 +25,9 @@ export default function RootLayout() {
                     <Stack.Screen name="(user)/dashboard" />
                     <Stack.Screen name="(admin)/dashboard" />
                 </Stack>
+                <ChatModal />
             </ChatProvider>
         </AuthProvider>
     );
 }
+
