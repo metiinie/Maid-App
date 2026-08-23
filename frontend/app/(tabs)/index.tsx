@@ -138,7 +138,7 @@ export default function HomeScreen() {
                                 </View>
                             </View>
                             <Text className="text-slate-400 text-[10px] font-medium mt-0.5">
-                                Ethiopia ↔ Gulf Overseas Recruitment Platform
+                                Ethiopia ↔ Middle East Corridor
                             </Text>
                         </View>
                     </View>
@@ -146,7 +146,7 @@ export default function HomeScreen() {
                     {/* Mode Context Badge */}
                     <View className="bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-full">
                         <Text className="text-amber-400 text-[10px] font-black uppercase">
-                            {mode === 'employer' ? 'EMPLOYER FEED' : 'JOB SEEKER FEED'}
+                            {mode === 'employer' ? 'EMPLOYER FEED' : 'CANDIDATE FEED'}
                         </Text>
                     </View>
                 </View>
@@ -154,22 +154,22 @@ export default function HomeScreen() {
 
             {/* Context Mode Banner */}
             <View
-                className={`px-5 py-2.5 flex-row items-center justify-between ${mode === 'employer' ? 'bg-slate-900 border-b border-slate-800' : 'bg-amber-100 border-b border-amber-200'
+                className={`px-5 py-2 flex-row items-center justify-between ${mode === 'employer' ? 'bg-slate-900 border-b border-slate-800' : 'bg-amber-100 border-b border-amber-200'
                     }`}
             >
                 <View className="flex-row items-center gap-2">
                     {mode === 'employer' ? (
-                        <Building2 size={16} color="#F59E0B" />
+                        <Building2 size={15} color="#F59E0B" />
                     ) : (
-                        <Briefcase size={16} color="#D97706" />
+                        <Briefcase size={15} color="#D97706" />
                     )}
                     <Text
                         className={`text-xs font-extrabold ${mode === 'employer' ? 'text-white' : 'text-amber-950'
                             }`}
                     >
                         {mode === 'employer'
-                            ? 'Employer Mode — Browsing Cleared Candidates'
-                            : 'Job Seeker Mode — Browsing Overseas Vacancies'}
+                            ? 'Employer Mode — Cleared Talent'
+                            : 'Job Seeker Mode — Overseas Jobs'}
                     </Text>
                 </View>
                 <Pressable onPress={() => router.push('/(tabs)/profile')} className="bg-white/20 px-2 py-0.5 rounded-md">
