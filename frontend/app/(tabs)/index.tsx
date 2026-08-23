@@ -8,7 +8,7 @@ import { WorkspaceSwitcher } from '../../components/WorkspaceSwitcher';
 
 export default function HomeScreen() {
     const router = useRouter();
-    const { user, admin } = useAuth();
+    const { user, admin, activeWorkspace } = useAuth();
     const [featured, setFeatured] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -34,6 +34,96 @@ export default function HomeScreen() {
         'Housemaid', 'Nanny / Babysitter', 'Private Driver',
         'Cook / Chef', 'Security Guard', 'Caregiver / Elderly Care',
     ];
+
+    const renderWorkspaceBanner = () => {
+        const type = activeWorkspace?.type || 'PERSONAL';
+
+        if (type === 'AGENCY') {
+            return (
+                <View className="bg-emerald-900 border border-emerald-800 p-4 rounded-2xl flex-row items-center justify-between shadow-xs">
+                    <View className="flex-row items-center flex-1 mr-2">
+                        <View className="w-9 h-9 rounded-xl bg-emerald-800 items-center justify-center mr-3 border border-emerald-700">
+                            <Building2 size={18} color="#A7F3D0" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-white text-xs font-bold">{activeWorkspace?.name}</Text>
+                            <Text className="text-emerald-200 text-[10px]">Recruitment Agency Workspace • Role: {activeWorkspace?.role}</Text>
+                        </View>
+                    </View>
+                    <Pressable
+                        onPress={() => router.push('/(admin)/dashboard')}
+                        className="bg-emerald-500 px-3.5 py-2 rounded-xl active:opacity-90"
+                    >
+                        <Text className="text-emerald-950 text-xs font-extrabold">9-Stage Pipeline →</Text>
+                    </Pressable>
+                </View>
+            );
+        }
+
+        if (type === 'GULF_EMPLOYER') {
+            return (
+                <View className="bg-blue-950 border border-blue-900 p-4 rounded-2xl flex-row items-center justify-between shadow-xs">
+                    <View className="flex-row items-center flex-1 mr-2">
+                        <View className="w-9 h-9 rounded-xl bg-blue-900 items-center justify-center mr-3 border border-blue-800">
+                            <Building2 size={18} color="#93C5FD" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-white text-xs font-bold">{activeWorkspace?.name}</Text>
+                            <Text className="text-blue-200 text-[10px]">Gulf Employer Portal • Role: {activeWorkspace?.role}</Text>
+                        </View>
+                    </View>
+                    <Pressable
+                        onPress={() => router.push('/(tabs)/vacancies')}
+                        className="bg-blue-500 px-3.5 py-2 rounded-xl active:opacity-90"
+                    >
+                        <Text className="text-white text-xs font-extrabold">Post Job Request →</Text>
+                    </Pressable>
+                </View>
+            );
+        }
+
+        if (type === 'PLATFORM_ADMIN') {
+            return (
+                <View className="bg-purple-950 border border-purple-900 p-4 rounded-2xl flex-row items-center justify-between shadow-xs">
+                    <View className="flex-row items-center flex-1 mr-2">
+                        <View className="w-9 h-9 rounded-xl bg-purple-900 items-center justify-center mr-3 border border-purple-800">
+                            <ShieldCheck size={18} color="#E9D5FF" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-white text-xs font-bold">Platform Super Admin</Text>
+                            <Text className="text-purple-200 text-[10px]">Governance & Organization Verification</Text>
+                        </View>
+                    </View>
+                    <Pressable
+                        onPress={() => router.push('/(admin)/dashboard')}
+                        className="bg-purple-500 px-3.5 py-2 rounded-xl active:opacity-90"
+                    >
+                        <Text className="text-white text-xs font-extrabold">Admin Panel →</Text>
+                    </Pressable>
+                </View>
+            );
+        }
+
+        return (
+            <View className="bg-white border border-slate-200 p-3.5 rounded-2xl flex-row items-center justify-between shadow-xs">
+                <View className="flex-row items-center flex-1 mr-2">
+                    <View className="w-8 h-8 rounded-lg bg-emerald-50 items-center justify-center mr-2.5 border border-emerald-200">
+                        <User size={16} color="#059669" />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-slate-900 text-xs font-bold">Personal Profile / CV Mode</Text>
+                        <Text className="text-slate-500 text-[10px]">Build your CV or join a recruitment agency team.</Text>
+                    </View>
+                </View>
+                <Pressable
+                    onPress={() => router.push(user ? '/(user)/dashboard' : '/(auth)/login')}
+                    className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl"
+                >
+                    <Text className="text-slate-800 text-[11px] font-bold">{user ? 'My CV →' : 'Sign In →'}</Text>
+                </Pressable>
+            </View>
+        );
+    };
 
     return (
         <ScrollView className="flex-1 bg-slate-50">
